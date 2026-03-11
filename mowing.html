@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#00c853"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Mowing Jobs — YourLandscaper</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+  <style>
+/* ── Root ── */
+:root{--bg:#0b0b0d;--card:#111216;--muted:#9aa0a6;--accent:#00c853;--accent-dim:rgba(0,200,83,.35);
+  --accent-glow:rgba(0,200,83,.25);--accent-line:rgba(0,200,83,.55);--white:#fff;--danger:#ff4444;
+  --warn:#ffa726;--gold:#ffd400;--sidebar-w:clamp(260px,28vw,340px)}
+*{box-sizing:border-box;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--white)}
+
+/* ── Outdoor / High-Glare Optimizations ── */
+@media(prefers-color-scheme:light){:root{--bg:#0d1a0d;--card:#0f1f10}}
+
+/* ── Layout ── */
+.app{display:flex;height:100%;width:100%}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar-w);min-width:240px;background:linear-gradient(180deg,#0a0f0a,#0d120d);border-right:1px solid rgba(0,200,83,.12);display:flex;flex-direction:column;z-index:50;flex-shrink:0;position:relative}
+.sb-hdr{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(0,200,83,.1);background:rgba(0,15,5,.6);backdrop-filter:blur(10px);flex-shrink:0}
+.sb-back{display:flex;align-items:center;gap:4px;background:none;border:1px solid rgba(0,200,83,.15);border-radius:10px;padding:7px 10px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;flex-shrink:0}
+.sb-back:hover{color:var(--accent);border-color:var(--accent-dim)}
+.sb-title{font-size:15px;font-weight:800;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;text-shadow:0 0 12px var(--accent-glow)}
+.sb-title small{display:block;font-size:9px;font-weight:400;color:var(--muted);letter-spacing:1.5px;text-shadow:none}
+
+.sb-controls{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid rgba(0,200,83,.08);flex-shrink:0}
+.sb-search{flex:1;padding:8px 12px;border-radius:10px;border:1px solid rgba(0,200,83,.12);background:rgba(0,200,83,.04);color:var(--accent);font-size:13px;outline:none;transition:border .15s}
+.sb-search:focus{border-color:var(--accent)}
+.sb-search::placeholder{color:rgba(0,200,83,.25)}
+.sb-add-btn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,200,83,.2);background:rgba(0,200,83,.06);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;transition:all .12s;flex-shrink:0}
+.sb-add-btn:hover{background:rgba(0,200,83,.12);border-color:var(--accent);box-shadow:0 0 12px var(--accent-glow)}
+
+/* ── Weather / Smart Info Strip ── */
+.sb-info{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid rgba(0,200,83,.06);font-size:11px;color:var(--muted);flex-shrink:0;flex-wrap:wrap}
+.sb-info-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-weight:600;font-size:10px;letter-spacing:.3px}
+.sb-info-badge.temp{background:rgba(0,200,83,.06);border:1px solid rgba(0,200,83,.12);color:var(--accent)}
+.sb-info-badge.temp.hot{background:rgba(255,68,68,.08);border-color:rgba(255,68,68,.2);color:var(--danger)}
+.sb-info-badge.gps{background:rgba(0,200,83,.06);border:1px solid rgba(0,200,83,.12);color:var(--accent)}
+.sb-info-badge.count{background:rgba(255,212,0,.06);border:1px solid rgba(255,212,0,.12);color:var(--gold)}
+
+/* ── Customer List ── */
+.sb-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 0;-webkit-overflow-scrolling:touch}
+.sb-list::-webkit-scrollbar{width:3px}
+.sb-list::-webkit-scrollbar-thumb{background:rgba(0,200,83,.2);border-radius:4px}
+
+.cust-card{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;margin:2px 6px;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:all .15s;position:relative}
+.cust-card:hover{background:rgba(0,200,83,.04);border-color:rgba(0,200,83,.1)}
+.cust-card.active{background:rgba(0,200,83,.08);border-color:rgba(0,200,83,.25);box-shadow:0 0 16px rgba(0,200,83,.08)}
+.cust-card.needs-service{border-left:3px solid var(--accent)}
+.cust-card.heat-alert{border-left:3px solid var(--danger)}
+.cust-card.recovery{border-left:3px solid var(--warn)}
+
+/* Avatar */
+.cust-avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;text-transform:uppercase;position:relative;overflow:hidden;border:2px solid rgba(0,200,83,.2)}
+.cust-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.cust-avatar .initials{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.cust-status-dot{position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;border:2px solid var(--bg);z-index:1}
+.cust-status-dot.due{background:var(--accent)}
+.cust-status-dot.overdue{background:var(--danger);animation:pulse-dot 1.5s ease infinite}
+.cust-status-dot.ok{background:#555}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(255,68,68,.4)}50%{box-shadow:0 0 0 6px rgba(255,68,68,0)}}
+
+/* Card Info */
+.cust-info{flex:1;min-width:0}
+.cust-name{font-size:14px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cust-addr{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.cust-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.cust-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.3px;text-transform:uppercase}
+.cust-tag.freq{background:rgba(0,200,83,.08);color:var(--accent);border:1px solid rgba(0,200,83,.15)}
+.cust-tag.dist{background:rgba(255,255,255,.04);color:var(--muted);border:1px solid rgba(255,255,255,.08)}
+.cust-tag.alert{background:rgba(255,68,68,.08);color:var(--danger);border:1px solid rgba(255,68,68,.15)}
+.cust-tag.warn{background:rgba(255,167,38,.08);color:var(--warn);border:1px solid rgba(255,167,38,.15)}
+.cust-tag.rate{background:rgba(255,212,0,.06);color:var(--gold);border:1px solid rgba(255,212,0,.12)}
+
+/* Distance badge */
+.cust-dist{font-size:10px;color:var(--accent);font-weight:700;white-space:nowrap;flex-shrink:0;text-align:right}
+.cust-dist small{display:block;font-size:9px;color:var(--muted);font-weight:400}
+
+/* ── Nav Buttons (on selected card) ── */
+.cust-nav{display:none;gap:4px;margin-top:6px}
+.cust-card.active .cust-nav{display:flex}
+.nav-btn{flex:1;padding:6px 4px;border-radius:8px;border:1px solid rgba(0,200,83,.15);background:rgba(0,200,83,.04);color:var(--accent);font-size:10px;font-weight:700;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;gap:4px;text-transform:uppercase;letter-spacing:.3px}
+.nav-btn:hover{background:rgba(0,200,83,.12);border-color:var(--accent)}
+.nav-btn:active{transform:scale(.95)}
+.nav-btn.go{background:linear-gradient(180deg,#00e676,#00c853);color:#000;border-color:var(--accent);font-weight:800}
+.nav-btn.go:hover{box-shadow:0 0 16px var(--accent-glow)}
+.nav-btn svg{width:14px;height:14px;flex-shrink:0}
+
+/* ── Lawn Care Alert Banner ── */
+.lawn-alert{display:none;align-items:center;gap:8px;padding:8px 12px;margin:4px 6px;border-radius:10px;font-size:11px;font-weight:600;line-height:1.4}
+.lawn-alert.show{display:flex}
+.lawn-alert.heat{background:rgba(255,68,68,.08);border:1px solid rgba(255,68,68,.15);color:var(--danger)}
+.lawn-alert.rule{background:rgba(255,167,38,.06);border:1px solid rgba(255,167,38,.12);color:var(--warn)}
+.lawn-alert.recovery-alert{background:rgba(0,200,83,.06);border:1px solid rgba(0,200,83,.12);color:var(--accent)}
+.lawn-alert svg{flex-shrink:0;width:16px;height:16px}
+
+/* ── Empty State ── */
+.sb-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted);font-size:13px;padding:20px;text-align:center}
+.sb-empty svg{opacity:.3;margin-bottom:4px}
+
+/* ── Map Area ── */
+.map-area{flex:1;position:relative;min-width:0}
+#map{position:absolute;inset:0;width:100%;height:100%}
+
+/* Subtle green tint on satellite */
+#map .mapboxgl-canvas{filter:saturate(.6) brightness(.7) contrast(1.15)}
+
+/* ── Mapbox Overrides ── */
+.mapboxgl-ctrl-attrib{display:none!important}
+.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{bottom:16px!important}
+.mapboxgl-ctrl-group{background:rgba(0,15,5,.85)!important;border:1px solid rgba(0,200,83,.15)!important;border-radius:8px!important}
+.mapboxgl-ctrl-group button{background:transparent!important;border-color:rgba(0,200,83,.1)!important}
+.mapboxgl-ctrl-group button .mapboxgl-ctrl-icon{filter:brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(400%) hue-rotate(100deg) brightness(100%)}
+.mapboxgl-ctrl-scale{background:rgba(0,15,5,.8)!important;border:1px solid rgba(0,200,83,.25)!important;color:var(--accent)!important;font-size:10px!important;border-radius:4px!important;padding:1px 6px!important}
+
+/* ── Map Overlays ── */
+.map-gps-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:20;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(0,15,5,.9);border:1px solid rgba(0,200,83,.12);display:flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
+.map-gps-dot{width:8px;height:8px;border-radius:50%;background:#666;transition:background .3s}
+.map-gps-dot.good{background:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
+.map-gps-dot.fair{background:#f39c12;box-shadow:0 0 6px rgba(243,156,18,.4)}
+.map-gps-dot.poor{background:var(--danger);box-shadow:0 0 6px rgba(255,68,68,.4)}
+.map-gps-text{color:var(--muted);font-size:11px}
+
+/* Map customer markers */
+.mow-marker{display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s}
+.mow-marker:hover{transform:scale(1.15)}
+.mow-marker .mm-dot{width:20px;height:20px;border-radius:50%;border:2.5px solid var(--accent);background:rgba(0,200,83,.15);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--accent);box-shadow:0 0 10px var(--accent-glow)}
+.mow-marker .mm-dot.overdue{border-color:var(--danger);background:rgba(255,68,68,.15);color:var(--danger);box-shadow:0 0 10px rgba(255,68,68,.25)}
+.mow-marker .mm-label{margin-top:3px;padding:2px 6px;border-radius:3px;background:rgba(0,15,5,.85);border:1px solid rgba(0,200,83,.15);color:var(--accent);font-size:9px;font-weight:700;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+
+/* ── Map Action Buttons (bottom-right) ── */
+.map-actions{position:absolute;bottom:16px;right:12px;z-index:20;display:flex;flex-direction:column;gap:6px}
+.map-act-btn{width:40px;height:40px;border-radius:10px;border:1px solid rgba(0,200,83,.15);background:rgba(0,15,5,.9);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;backdrop-filter:blur(10px)}
+.map-act-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
+.map-act-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(0,200,83,.08)}
+.map-act-btn svg{width:18px;height:18px}
+
+/* ── Modals ── */
+.modal-ov{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.m-box{background:var(--card);border:1px solid rgba(0,200,83,.15);border-radius:16px;padding:20px;width:92%;max-width:520px;max-height:90vh;overflow-y:auto}
+
+/* ── Add / Edit Customer Modal ── */
+.cust-modal-title{margin:0 0 14px;font-size:18px;font-weight:800;color:var(--accent)}
+.cm-field{margin-bottom:12px}
+.cm-field label{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.cm-input{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(0,200,83,.12);background:rgba(0,200,83,.04);color:var(--white);font-size:14px;outline:none;transition:border .15s}
+.cm-input:focus{border-color:var(--accent)}
+.cm-input::placeholder{color:rgba(255,255,255,.2)}
+.cm-select{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(0,200,83,.12);background:rgba(0,200,83,.04);color:var(--white);font-size:14px;cursor:pointer}
+.cm-select:focus{outline:none;border-color:var(--accent)}
+.cm-textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(0,200,83,.12);background:rgba(0,200,83,.04);color:var(--white);font-size:13px;min-height:60px;resize:vertical;outline:none}
+.cm-textarea:focus{border-color:var(--accent)}
+.cm-row{display:flex;gap:10px}
+.cm-row .cm-field{flex:1}
+
+/* Avatar picker */
+.cm-avatar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.cm-avatar-preview{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(0,200,83,.2);overflow:hidden}
+.cm-avatar-preview img{width:100%;height:100%;object-fit:cover}
+.cm-avatar-btn{padding:8px 14px;border-radius:8px;border:1px solid rgba(0,200,83,.15);background:rgba(0,200,83,.04);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
+.cm-avatar-btn:hover{border-color:var(--accent);background:rgba(0,200,83,.10)}
+input[type=file].hidden-file{display:none}
+
+/* Cut History */
+.cm-history{max-height:150px;overflow-y:auto;margin-top:4px}
+.cm-history-item{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin-bottom:2px;border-radius:6px;background:rgba(0,200,83,.03);border:1px solid rgba(0,200,83,.06);font-size:11px}
+.cm-history-item .hi-date{color:var(--muted)}
+.cm-history-item .hi-cut{color:var(--accent);font-weight:600}
+
+/* Lawn Care Section */
+.cm-lawn{padding:10px;border-radius:10px;background:rgba(0,200,83,.03);border:1px solid rgba(0,200,83,.08);margin-bottom:12px}
+.cm-lawn h4{font-size:12px;color:var(--accent);margin:0 0 8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.cm-lawn-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;color:var(--muted)}
+.cm-lawn-row .lawn-val{color:var(--accent);font-weight:700}
+.cm-lawn-row .lawn-warn{color:var(--danger);font-weight:700}
+
+/* Modal actions */
+.cm-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.cm-btn{padding:10px 20px;border-radius:10px;border:1px solid #222;font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.cm-cancel{background:#1a1b1f;color:var(--muted)}
+.cm-cancel:hover{color:var(--white)}
+.cm-save{border-color:var(--accent);background:linear-gradient(180deg,#00e676,#00c853);color:#000;font-weight:700}
+.cm-save:hover{box-shadow:0 4px 20px var(--accent-glow)}
+.cm-save:active{transform:scale(.96)}
+.cm-delete{background:rgba(255,68,68,.1);color:var(--danger);border-color:rgba(255,68,68,.25)}
+.cm-delete:hover{background:rgba(255,68,68,.2)}
+
+/* ── QWERTY ── */
+.qw-title{margin:0 0 12px;font-size:17px;font-weight:700;color:var(--accent)}
+.qw-display{display:flex;align-items:center;padding:12px 16px;margin-bottom:12px;border-radius:12px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid rgba(0,200,83,.12);min-height:48px}
+.qw-val{color:var(--accent);font-size:22px;font-weight:700;letter-spacing:.5px;word-break:break-all}
+.qw-cur{color:var(--accent);font-size:22px;font-weight:300;animation:blink 1s step-end infinite;margin-left:1px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.qw-rows{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.qw-row{display:flex;gap:4px;justify-content:center}
+.qk{min-width:32px;height:40px;border-radius:10px;border:1px solid rgba(0,200,83,.12);background:rgba(0,200,83,.04);color:var(--accent);font-size:16px;font-weight:700;cursor:pointer;transition:all .1s;user-select:none;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.qk:active{transform:scale(.92);background:rgba(0,200,83,.15);border-color:var(--accent)}
+.qk-sh{min-width:48px;color:var(--muted)}.qk-sh.on{color:var(--accent);border-color:rgba(0,200,83,.3);background:rgba(0,200,83,.08)}
+.qk-bk{min-width:48px;color:var(--muted)}.qk-bk:active{color:var(--danger)}
+.qk-sp{flex:1;max-width:240px;min-width:100px;font-size:11px;color:var(--muted);letter-spacing:1px}
+.qw-acts{display:flex;gap:10px;justify-content:flex-end}
+.qw-btn{display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;border:1px solid #222;background:#1a1b1f;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.qw-cancel:hover{color:var(--danger);border-color:rgba(255,68,68,.3)}
+.qw-save{border-color:var(--accent);background:linear-gradient(180deg,#00e676,#00c853);color:#000;font-weight:700}
+.qw-save:hover{box-shadow:0 4px 20px var(--accent-glow)}
+
+/* ── Confirm ── */
+.cf-box{background:var(--card);border:1px solid #222;border-radius:16px;padding:22px;max-width:360px;width:88%;text-align:center}
+.cf-box h3{color:var(--danger);font-size:18px;margin:0 0 10px}
+.cf-box p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}
+.cf-acts{display:flex;gap:10px;justify-content:center}
+.cf-acts button{padding:10px 22px;border-radius:10px;border:1px solid #222;font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.cf-yes{background:rgba(255,68,68,.15);color:var(--danger);border-color:rgba(255,68,68,.3)}.cf-yes:hover{background:rgba(255,68,68,.25)}
+.cf-no{background:#1a1b1f;color:var(--muted)}.cf-no:hover{color:var(--white)}
+
+/* ── Token Setup ── */
+.tok-box{max-width:440px}
+.tok-box h3{color:var(--accent);font-size:18px;margin:0 0 6px}
+.tok-box p{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 14px}
+.tok-box a{color:var(--accent)}
+.tok-input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(0,200,83,.12);background:rgba(0,200,83,.04);color:var(--white);font-size:14px;margin-bottom:14px;outline:none}
+.tok-input:focus{border-color:var(--accent)}
+.tok-save{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(180deg,#00e676,#00c853);color:#000;font-size:15px;font-weight:700;cursor:pointer}
+.tok-save:hover{box-shadow:0 4px 20px var(--accent-glow)}
+.tok-skip{display:block;text-align:center;margin-top:10px;color:var(--muted);font-size:12px;cursor:pointer;background:none;border:none;width:100%}
+.tok-skip:hover{color:var(--white)}
+
+/* ── Service Log Bottom Sheet (slide-up from map side) ── */
+.svc-sheet{position:fixed;bottom:0;right:0;width:calc(100% - var(--sidebar-w));z-index:150;background:rgba(0,12,5,.97);border-top:1px solid rgba(0,200,83,.15);border-radius:18px 18px 0 0;transform:translateY(100%);transition:transform .3s ease;max-height:60vh;overflow-y:auto;padding:0 16px 20px}
+.svc-sheet.open{transform:translateY(0)}
+.svc-handle{width:40px;height:4px;border-radius:4px;background:#333;margin:10px auto 8px}
+.svc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.svc-hdr h3{font-size:15px;font-weight:700;color:var(--accent)}
+.svc-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px 8px}
+.svc-close:hover{color:var(--danger)}
+.svc-field{margin-bottom:10px}
+.svc-field label{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.svc-input{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(0,200,83,.12);background:rgba(0,200,83,.04);color:var(--white);font-size:14px;outline:none}
+.svc-input:focus{border-color:var(--accent)}
+.svc-lawn-info{padding:10px;border-radius:10px;background:rgba(0,200,83,.03);border:1px solid rgba(0,200,83,.08);margin-bottom:10px;font-size:12px;color:var(--muted);line-height:1.6}
+.svc-lawn-info strong{color:var(--accent)}
+.svc-lawn-info .warn{color:var(--danger)}
+.svc-acts{display:flex;gap:10px;margin-top:12px}
+.svc-btn{flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .12s}
+.svc-complete{background:linear-gradient(180deg,#00e676,#00c853);color:#000}
+.svc-complete:hover{box-shadow:0 4px 20px var(--accent-glow)}
+.svc-skip{background:rgba(255,167,38,.1);color:var(--warn);border:1px solid rgba(255,167,38,.2)}
+.svc-skip:hover{background:rgba(255,167,38,.18)}
+
+/* ── Mobile: collapse sidebar to bottom sheet ── */
+@media(max-width:700px){
+  .app{flex-direction:column-reverse}
+  .sidebar{width:100%;min-width:unset;max-height:45vh;border-right:none;border-top:1px solid rgba(0,200,83,.12)}
+  .map-area{min-height:55vh}
+  .svc-sheet{width:100%}
+  :root{--sidebar-w:0px}
+}
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══ Sidebar ═══ -->
+  <div class="sidebar">
+    <div class="sb-hdr">
+      <button id="mow-back" class="sb-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
+      </button>
+      <div style="flex:1;text-align:center">
+        <span class="sb-title">MOWING JOBS<small>SMART SCHEDULE</small></span>
+      </div>
+    </div>
+
+    <div class="sb-controls">
+      <input id="sb-search" class="sb-search" type="text" placeholder="Search customers…" autocomplete="off"/>
+      <button id="sb-add" class="sb-add-btn" title="Add Customer">+</button>
+    </div>
+
+    <div class="sb-info" id="sb-info">
+      <span class="sb-info-badge temp" id="info-temp">🌡 --°F</span>
+      <span class="sb-info-badge gps" id="info-gps">📡 Acquiring…</span>
+      <span class="sb-info-badge count" id="info-count">0 jobs</span>
+    </div>
+
+    <!-- Smart Alerts -->
+    <div class="lawn-alert heat" id="alert-heat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      <span id="alert-heat-text">Heat Stress Alert: >90°F — Raise cut height or skip mowing</span>
+    </div>
+
+    <div id="cust-list" class="sb-list">
+      <div class="sb-empty" id="sb-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18"/><path d="M5 21V7l4-4 4 4v14"/><circle cx="9" cy="15" r="2"/></svg>
+        <p>No customers yet</p>
+        <p style="font-size:11px">Tap <strong>+</strong> to add your first mowing job</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Map Area ═══ -->
+  <div class="map-area">
+    <div id="map"></div>
+
+    <div class="map-gps-bar">
+      <div id="map-gps-dot" class="map-gps-dot"></div>
+      <span id="map-gps-text" class="map-gps-text">GPS: Acquiring…</span>
+    </div>
+
+    <div class="map-actions">
+      <button class="map-act-btn" id="btn-center" title="Center on GPS">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+      </button>
+      <button class="map-act-btn" id="btn-fit" title="Fit all customers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+      </button>
+      <button class="map-act-btn" id="btn-token" title="API Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Service Log Sheet ═══ -->
+<div class="svc-sheet" id="svc-sheet">
+  <div class="svc-handle"></div>
+  <div class="svc-hdr">
+    <h3 id="svc-title">Log Service</h3>
+    <button class="svc-close" id="svc-close">×</button>
+  </div>
+  <div class="svc-lawn-info" id="svc-lawn-info"></div>
+  <div class="svc-field">
+    <label>Height Before (inches)</label>
+    <input class="svc-input" id="svc-height-before" type="number" step="0.25" min="0" placeholder="e.g. 5.5"/>
+  </div>
+  <div class="svc-field">
+    <label>Height After (inches)</label>
+    <input class="svc-input" id="svc-height-after" type="number" step="0.25" min="0" placeholder="e.g. 3.5"/>
+  </div>
+  <div class="svc-field">
+    <label>Notes</label>
+    <input class="svc-input" id="svc-notes" type="text" placeholder="Edged, trimmed, etc."/>
+  </div>
+  <div class="svc-acts">
+    <button class="svc-btn svc-skip" id="svc-skip">Skip (Too Hot)</button>
+    <button class="svc-btn svc-complete" id="svc-complete">Complete Service ✓</button>
+  </div>
+</div>
+
+<!-- ═══ Add/Edit Customer Modal ═══ -->
+<div class="modal-ov" id="cust-modal">
+  <div class="m-box">
+    <h3 class="cust-modal-title" id="cm-title">Add Customer</h3>
+    <div class="cm-avatar-row">
+      <div class="cm-avatar-preview" id="cm-avatar-preview" style="background:#4CAF50"><span class="initials">?</span></div>
+      <button class="cm-avatar-btn" id="cm-avatar-btn">Choose Photo</button>
+      <button class="cm-avatar-btn" id="cm-avatar-clear" style="display:none">Remove</button>
+      <input type="file" class="hidden-file" id="cm-avatar-file" accept="image/*"/>
+    </div>
+    <div class="cm-field">
+      <label>Customer Name</label>
+      <input class="cm-input" id="cm-name" type="text" placeholder="John Smith" readonly/>
+    </div>
+    <div class="cm-field">
+      <label>Address</label>
+      <input class="cm-input" id="cm-address" type="text" placeholder="123 Oak Street" readonly/>
+    </div>
+    <div class="cm-row">
+      <div class="cm-field">
+        <label>Frequency</label>
+        <select class="cm-select" id="cm-freq">
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Bi-Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="on-call">On-Call</option>
+        </select>
+      </div>
+      <div class="cm-field">
+        <label>Rate ($)</label>
+        <input class="cm-input" id="cm-rate" type="number" step="5" min="0" placeholder="45"/>
+      </div>
+    </div>
+    <div class="cm-field">
+      <label>Job Description</label>
+      <textarea class="cm-textarea" id="cm-job" placeholder="Full lawn mow + edging, trim hedges…"></textarea>
+    </div>
+    <div class="cm-field">
+      <label>Notes</label>
+      <textarea class="cm-textarea" id="cm-notes" placeholder="Gate code, dog in yard, etc."></textarea>
+    </div>
+    <div class="cm-row">
+      <div class="cm-field">
+        <label>Target Height (in)</label>
+        <input class="cm-input" id="cm-target-height" type="number" step="0.25" min="0.5" max="6" placeholder="3.5"/>
+      </div>
+      <div class="cm-field">
+        <label>Grass Type</label>
+        <select class="cm-select" id="cm-grass-type">
+          <option value="cool-season">Cool Season</option>
+          <option value="warm-season">Warm Season</option>
+          <option value="mixed">Mixed</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Lawn Care Info (visible in edit mode) -->
+    <div class="cm-lawn" id="cm-lawn" style="display:none">
+      <h4>🌿 Lawn Care Intelligence</h4>
+      <div class="cm-lawn-row">Est. Current Height: <span class="lawn-val" id="cm-est-height">—</span></div>
+      <div class="cm-lawn-row">1/3 Rule Max Cut: <span class="lawn-val" id="cm-max-cut">—</span></div>
+      <div class="cm-lawn-row">Days Since Service: <span class="lawn-val" id="cm-days-since">—</span></div>
+      <div class="cm-lawn-row" id="cm-heat-row" style="display:none">Status: <span class="lawn-warn">⚠ Heat Stress Zone</span></div>
+      <div class="cm-lawn-row" id="cm-recovery-row" style="display:none">Recovery Mode: <span class="lawn-warn" id="cm-recovery-days">—</span></div>
+      <div style="margin-top:6px"><strong style="color:var(--accent);font-size:11px">Cut History</strong></div>
+      <div class="cm-history" id="cm-history"></div>
+    </div>
+
+    <div class="cm-actions">
+      <button class="cm-btn cm-delete" id="cm-delete" style="display:none">Delete</button>
+      <div style="flex:1"></div>
+      <button class="cm-btn cm-cancel" id="cm-cancel">Cancel</button>
+      <button class="cm-btn cm-save" id="cm-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ QWERTY Keyboard ═══ -->
+<div class="modal-ov" id="qw-modal">
+  <div class="m-box">
+    <h3 class="qw-title" id="qw-title">Name</h3>
+    <div class="qw-display"><span class="qw-val" id="qw-text"></span><span class="qw-cur">|</span></div>
+    <div class="qw-rows" id="qw-rows"></div>
+    <div class="qw-acts">
+      <button class="qw-btn qw-cancel" id="qw-cancel">Cancel</button>
+      <button class="qw-btn qw-save" id="qw-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Confirm Modal ═══ -->
+<div class="modal-ov" id="cf-modal">
+  <div class="cf-box">
+    <h3 id="cf-title">Confirm</h3>
+    <p id="cf-msg"></p>
+    <div class="cf-acts">
+      <button class="cf-no" id="cf-no">Cancel</button>
+      <button class="cf-yes" id="cf-yes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Token Setup Modal ═══ -->
+<div class="modal-ov" id="tok-modal">
+  <div class="m-box tok-box">
+    <h3>Mapbox Access Token</h3>
+    <p>Mowing Jobs uses <a href="https://www.mapbox.com/" target="_blank" rel="noopener">Mapbox</a> for satellite map view and GPS routing.<br/>Create a free account and paste your <strong>public token</strong> below.</p>
+    <input class="tok-input" id="tok-input" type="text" placeholder="pk.eyJ1Ijo…"/>
+    <button class="tok-save" id="tok-save">Save &amp; Load Map</button>
+    <button class="tok-skip" id="tok-skip">I'll add it later</button>
+  </div>
+</div>
+
+<!-- ═══ Scripts ═══ -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  MOWING JOBS — Smart Schedule & Lawn Care
+//  YourLandscaper PWA
+// ═══════════════════════════════════════════════════════════
+(function(){
+'use strict';
+
+/* ─────────── Constants ─────────── */
+const STORE   = 'yl_mowing_v1';
+const TOK_KEY = 'yl_mapbox_token';
+const SAT_STYLE = 'mapbox://styles/mapbox/satellite-streets-v12';
+const DEFAULT_CENTER = [-76.3, 40.04];
+const DEFAULT_ZOOM   = 14;
+
+// Grass growth rates (inches per day, average)
+const GROWTH_RATE = { 'cool-season': 0.12, 'warm-season': 0.15, 'mixed': 0.13 };
+// Heat stress threshold
+const HEAT_THRESHOLD = 90; // °F
+
+// Avatar colors
+const AVATAR_COLORS = ['#4CAF50','#2196F3','#FF9800','#9C27B0','#00BCD4','#E91E63','#FF5722','#3F51B5','#009688','#795548','#607D8B','#CDDC39'];
+
+/* ─────────── Storage ─────────── */
+function defStore(){
+  return { customers:[], temperature:null, tempLastUpdate:null };
+}
+function loadStore(){ try{ return JSON.parse(localStorage.getItem(STORE))||defStore(); }catch(e){ return defStore(); }}
+function saveStore(s){ localStorage.setItem(STORE,JSON.stringify(s)); }
+let S = loadStore();
+// Migrate
+if(!Array.isArray(S.customers)) S.customers=[];
+S.customers.forEach(c=>{
+  if(!c.cutHistory) c.cutHistory=[];
+  if(!c.grassType) c.grassType='cool-season';
+  if(!c.targetHeight) c.targetHeight=3.5;
+  if(c.recoveryMode===undefined) c.recoveryMode=false;
+});
+
+/* ─────────── DOM Refs ─────────── */
+const $=id=>document.getElementById(id);
+const custListEl=$('cust-list'), sbEmpty=$('sb-empty'), sbSearch=$('sb-search');
+const infoTemp=$('info-temp'), infoGps=$('info-gps'), infoCount=$('info-count');
+const alertHeat=$('alert-heat');
+const mapGpsDot=$('map-gps-dot'), mapGpsText=$('map-gps-text');
+
+/* ─────────── State ─────────── */
+let map = null;
+let currentPos = null;
+let watchId = null;
+let firstFix = false;
+let selectedIdx = -1;
+let editIdx = -1; // -1 = new, >=0 = editing
+let mapMarkers = []; // Mapbox Marker instances
+let gpsMarkerEl = null, gpsMarker = null;
+let currentTemp = S.temperature || null; // °F
+
+/* ─────────── Helpers ─────────── */
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6378137,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmtDist(m){
+  const ft=m*3.28084;
+  if(ft<500) return ft.toFixed(0)+' ft';
+  const mi=ft/5280;
+  return mi<10?mi.toFixed(1)+' mi':mi.toFixed(0)+' mi';
+}
+function daysSince(ts){ return ts?Math.floor((Date.now()-ts)/(86400000)):null; }
+function getInitials(name){
+  if(!name) return '?';
+  const parts=name.trim().split(/\s+/);
+  if(parts.length>=2) return (parts[0][0]+parts[parts.length-1][0]).toUpperCase();
+  return name.substring(0,2).toUpperCase();
+}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+/* ─────────── Smart Lawn Care Engine ─────────── */
+function estimateCurrentHeight(c){
+  if(!c.lastService || !c.grassHeight) return c.targetHeight||3.5;
+  const days = daysSince(c.lastService);
+  const rate = GROWTH_RATE[c.grassType||'cool-season'];
+  // Heat reduces growth
+  let factor = 1;
+  if(currentTemp && currentTemp > HEAT_THRESHOLD) factor = 0.4;
+  else if(currentTemp && currentTemp > 85) factor = 0.7;
+  return c.grassHeight + (days * rate * factor);
+}
+
+function getOneThirdMaxCut(currentHeight){
+  // 1/3 rule: never remove more than 1/3 of blade
+  return currentHeight * (2/3);
+}
+
+function isHeatStress(){
+  return currentTemp && currentTemp >= HEAT_THRESHOLD;
+}
+
+function needsService(c){
+  if(!c.lastService) return true;
+  const days = daysSince(c.lastService);
+  if(c.frequency==='weekly' && days>=6) return true;
+  if(c.frequency==='biweekly' && days>=13) return true;
+  if(c.frequency==='monthly' && days>=28) return true;
+  return false;
+}
+
+function isOverdue(c){
+  if(!c.lastService) return true;
+  const days = daysSince(c.lastService);
+  if(c.frequency==='weekly' && days>=9) return true;
+  if(c.frequency==='biweekly' && days>=18) return true;
+  if(c.frequency==='monthly' && days>=35) return true;
+  return false;
+}
+
+function getServiceStatus(c){
+  if(c.recoveryMode) return 'recovery';
+  if(isOverdue(c)) return 'overdue';
+  if(needsService(c)) return 'due';
+  return 'ok';
+}
+
+function getDotClass(c){
+  const s=getServiceStatus(c);
+  if(s==='overdue') return 'overdue';
+  if(s==='due'||s==='recovery') return 'due';
+  return 'ok';
+}
+
+/* ─────────── Sorting: GPS Proximity + Priority ─────────── */
+function getSortedCustomers(){
+  const list = S.customers.map((c,i)=>({...c,_idx:i}));
+  list.forEach(c=>{
+    c._dist = currentPos ? haversine(currentPos.lat,currentPos.lng,c.lat||0,c.lng||0) : Infinity;
+    // Priority score: overdue=3, due=2, recovery=1, ok=0
+    const s=getServiceStatus(c);
+    c._priority = s==='overdue'?3:s==='due'?2:s==='recovery'?1:0;
+  });
+  // Sort: priority desc, then distance asc
+  list.sort((a,b)=>{
+    if(b._priority!==a._priority) return b._priority-a._priority;
+    return a._dist-b._dist;
+  });
+  return list;
+}
+
+/* ─────────── Token Flow ─────────── */
+function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
+function showTokenModal(){
+  $('tok-modal').classList.add('open');
+  $('tok-input').value=getToken();
+}
+$('tok-save').onclick=()=>{
+  const v=$('tok-input').value.trim();
+  if(!v){alert('Please enter a valid Mapbox token.');return;}
+  localStorage.setItem(TOK_KEY,v);
+  $('tok-modal').classList.remove('open');
+  if(!map) initMap(v);
+};
+$('tok-skip').onclick=()=>{$('tok-modal').classList.remove('open');};
+$('btn-token').onclick=showTokenModal;
+
+/* ─────────── Map Init ─────────── */
+function initMap(token){
+  mapboxgl.accessToken=token;
+  map=new mapboxgl.Map({
+    container:'map',
+    style:SAT_STYLE,
+    center:DEFAULT_CENTER,
+    zoom:DEFAULT_ZOOM,
+    pitch:0,
+    bearing:0,
+    antialias:true
+  });
+  map.addControl(new mapboxgl.NavigationControl({showCompass:true,showZoom:true}),'top-right');
+  map.addControl(new mapboxgl.ScaleControl({maxWidth:120,unit:'imperial'}),'bottom-left');
+  map.on('load',()=>{
+    rebuildMapMarkers();
+    startGPS();
+  });
+}
+
+/* ─────────── GPS Tracking ─────────── */
+function startGPS(){
+  if(!navigator.geolocation){
+    mapGpsText.textContent='GPS: Not available';
+    mapGpsDot.className='map-gps-dot poor';
+    infoGps.textContent='📡 No GPS';
+    return;
+  }
+  // Create pulse marker
+  gpsMarkerEl=document.createElement('div');
+  gpsMarkerEl.innerHTML='<div style="width:16px;height:16px;border-radius:50%;background:transparent;border:2px solid #00c853;box-shadow:0 0 12px rgba(0,200,83,.5);position:relative"><div style="position:absolute;inset:3px;border-radius:50%;background:#00c853"></div></div>';
+  const style=document.createElement('style');
+  style.textContent='@keyframes gpsPulse{0%{box-shadow:0 0 0 0 rgba(0,200,83,.4)}70%{box-shadow:0 0 0 20px rgba(0,200,83,0)}100%{box-shadow:0 0 0 0 rgba(0,200,83,0)}}';
+  document.head.appendChild(style);
+
+  watchId=navigator.geolocation.watchPosition(pos=>{
+    currentPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+    const a=pos.coords.accuracy;
+    const cls=a<=10?'good':a<=30?'fair':'poor';
+    mapGpsDot.className='map-gps-dot '+cls;
+    mapGpsText.textContent='GPS: ±'+a.toFixed(0)+'m';
+    infoGps.textContent='📡 ±'+a.toFixed(0)+'m';
+    // Update marker
+    if(!gpsMarker){
+      gpsMarker=new mapboxgl.Marker({element:gpsMarkerEl}).setLngLat([currentPos.lng,currentPos.lat]).addTo(map);
+    } else {
+      gpsMarker.setLngLat([currentPos.lng,currentPos.lat]);
+    }
+    if(!firstFix){
+      firstFix=true;
+      if(S.customers.length===0) map.flyTo({center:[currentPos.lng,currentPos.lat],zoom:DEFAULT_ZOOM,duration:1500});
+    }
+    // Re-sort list
+    renderCustomerList();
+  },err=>{
+    mapGpsText.textContent='GPS: '+err.message;
+    mapGpsDot.className='map-gps-dot poor';
+    infoGps.textContent='📡 Error';
+  },{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+}
+
+/* ─────────── Map Markers ─────────── */
+function rebuildMapMarkers(){
+  mapMarkers.forEach(m=>m.remove());
+  mapMarkers=[];
+  S.customers.forEach((c,i)=>{
+    if(!c.lat||!c.lng) return;
+    const el=document.createElement('div');
+    el.className='mow-marker';
+    const st=getServiceStatus(c);
+    const dotCls=st==='overdue'?' overdue':'';
+    el.innerHTML=`<div class="mm-dot${dotCls}">${i+1}</div><div class="mm-label">${esc(c.name||'#'+(i+1))}</div>`;
+    const mk=new mapboxgl.Marker({element:el,anchor:'center'}).setLngLat([c.lng,c.lat]).addTo(map);
+    el.addEventListener('click',()=>{
+      selectCustomer(i);
+      map.flyTo({center:[c.lng,c.lat],zoom:17,duration:800});
+    });
+    mapMarkers.push(mk);
+  });
+}
+
+/* ─────────── Render Customer List ─────────── */
+function renderCustomerList(filterQuery){
+  const sorted=getSortedCustomers();
+  const q=(filterQuery||sbSearch.value||'').toLowerCase();
+  let filtered=sorted;
+  if(q) filtered=sorted.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.address||'').toLowerCase().includes(q));
+
+  // Clear only cards, keep empty state
+  custListEl.querySelectorAll('.cust-card,.lawn-alert.rule,.lawn-alert.recovery-alert').forEach(el=>el.remove());
+
+  if(filtered.length===0){
+    sbEmpty.style.display=S.customers.length===0?'flex':'none';
+    if(S.customers.length>0 && q){
+      sbEmpty.style.display='flex';
+      sbEmpty.querySelector('p').textContent='No matches for "'+q+'"';
+    }
+    infoCount.textContent=S.customers.length+' jobs';
+    return;
+  }
+  sbEmpty.style.display='none';
+  infoCount.textContent=filtered.length+' jobs';
+
+  filtered.forEach(c=>{
+    const card=document.createElement('div');
+    card.className='cust-card';
+    const st=getServiceStatus(c);
+    if(st==='overdue'||st==='due') card.classList.add('needs-service');
+    if(st==='overdue' && isHeatStress()) card.classList.add('heat-alert');
+    if(st==='recovery') card.classList.add('recovery');
+    if(c._idx===selectedIdx) card.classList.add('active');
+
+    const distStr=c._dist<Infinity?fmtDist(c._dist):'—';
+    const daysSinceStr=daysSince(c.lastService);
+    const estH=estimateCurrentHeight(c).toFixed(1);
+    const freqLabel={'weekly':'Weekly','biweekly':'Bi-Weekly','monthly':'Monthly','on-call':'On-Call'}[c.frequency]||c.frequency;
+
+    // Tags
+    let tags=`<span class="cust-tag freq">${freqLabel}</span>`;
+    if(c._dist<Infinity) tags+=`<span class="cust-tag dist">${distStr}</span>`;
+    if(c.rate) tags+=`<span class="cust-tag rate">$${c.rate}</span>`;
+    if(st==='overdue') tags+=`<span class="cust-tag alert">OVERDUE</span>`;
+    if(isHeatStress() && needsService(c)) tags+=`<span class="cust-tag alert">HEAT</span>`;
+    if(c.recoveryMode) tags+=`<span class="cust-tag warn">RECOVERY</span>`;
+
+    // Avatar
+    const avatarBg=c.avatarColor||AVATAR_COLORS[c._idx%AVATAR_COLORS.length];
+    const avatarInner=c.avatar?`<img src="${c.avatar}" alt=""/>`:`<span class="initials">${getInitials(c.name)}</span>`;
+    const dotClass=getDotClass(c);
+
+    card.innerHTML=`
+      <div class="cust-avatar" style="background:${avatarBg}">
+        ${avatarInner}
+        <div class="cust-status-dot ${dotClass}"></div>
+      </div>
+      <div class="cust-info">
+        <div class="cust-name">${esc(c.name||'Customer #'+(c._idx+1))}</div>
+        <div class="cust-addr">${esc(c.address||'No address')}</div>
+        <div class="cust-meta">${tags}</div>
+        <div class="cust-nav">
+          <button class="nav-btn car" data-mode="driving" title="Drive">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14v-5l-2-6H7L5 12z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+            Car
+          </button>
+          <button class="nav-btn walk" data-mode="walking" title="Walk">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="4" r="2"/><path d="M14 7l-2 9-3-3-3 6"/><path d="M14 7l3 5h3"/></svg>
+            Walk
+          </button>
+          <button class="nav-btn go" data-action="service" title="Log Service">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Go
+          </button>
+          <button class="nav-btn" data-action="edit" title="Edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
+      </div>
+      <div class="cust-dist">${distStr}<small>${daysSinceStr!==null?daysSinceStr+'d ago':'New'}</small></div>
+    `;
+
+    card.addEventListener('click',e=>{
+      if(e.target.closest('.nav-btn')) return;
+      selectCustomer(c._idx);
+      if(c.lat&&c.lng&&map) map.flyTo({center:[c.lng,c.lat],zoom:17,duration:800});
+    });
+
+    // Nav button handlers
+    card.querySelectorAll('.nav-btn').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const mode=btn.dataset.mode;
+        const action=btn.dataset.action;
+        if(mode && c.lat && c.lng){
+          const url=`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=${mode}`;
+          window.open(url,'_blank');
+        }
+        if(action==='service'){
+          openServiceSheet(c._idx);
+        }
+        if(action==='edit'){
+          openEditCustomer(c._idx);
+        }
+      });
+    });
+
+    custListEl.appendChild(card);
+  });
+}
+
+function selectCustomer(idx){
+  selectedIdx=(selectedIdx===idx)?-1:idx;
+  renderCustomerList();
+}
+
+/* ─────────── Temperature (manual entry for now) ─────────── */
+// Tap on temp badge to set
+infoTemp.addEventListener('click',()=>{
+  openQwerty('Temperature (°F)',currentTemp?String(currentTemp):'',val=>{
+    const t=parseFloat(val);
+    if(!isNaN(t)){
+      currentTemp=t;
+      S.temperature=t;
+      S.tempLastUpdate=Date.now();
+      saveStore(S);
+      updateTempDisplay();
+      renderCustomerList();
+    }
+  });
+});
+
+function updateTempDisplay(){
+  if(currentTemp!==null){
+    infoTemp.textContent='🌡 '+currentTemp+'°F';
+    infoTemp.classList.toggle('hot',currentTemp>=HEAT_THRESHOLD);
+    alertHeat.classList.toggle('show',currentTemp>=HEAT_THRESHOLD);
+  } else {
+    infoTemp.textContent='🌡 --°F';
+    infoTemp.classList.remove('hot');
+    alertHeat.classList.remove('show');
+  }
+}
+
+/* ─────────── Customer CRUD ─────────── */
+function openAddCustomer(){
+  editIdx=-1;
+  $('cm-title').textContent='Add Customer';
+  $('cm-name').value='';
+  $('cm-address').value='';
+  $('cm-freq').value='weekly';
+  $('cm-rate').value='';
+  $('cm-job').value='';
+  $('cm-notes').value='';
+  $('cm-target-height').value='3.5';
+  $('cm-grass-type').value='cool-season';
+  $('cm-avatar-preview').style.background=AVATAR_COLORS[S.customers.length%AVATAR_COLORS.length];
+  $('cm-avatar-preview').innerHTML='<span class="initials">?</span>';
+  $('cm-avatar-clear').style.display='none';
+  $('cm-delete').style.display='none';
+  $('cm-lawn').style.display='none';
+  $('cust-modal').classList.add('open');
+}
+
+function openEditCustomer(idx){
+  editIdx=idx;
+  const c=S.customers[idx];
+  if(!c) return;
+  $('cm-title').textContent='Edit Customer';
+  $('cm-name').value=c.name||'';
+  $('cm-address').value=c.address||'';
+  $('cm-freq').value=c.frequency||'weekly';
+  $('cm-rate').value=c.rate||'';
+  $('cm-job').value=c.jobDescription||'';
+  $('cm-notes').value=c.notes||'';
+  $('cm-target-height').value=c.targetHeight||3.5;
+  $('cm-grass-type').value=c.grassType||'cool-season';
+
+  // Avatar
+  const bg=c.avatarColor||AVATAR_COLORS[idx%AVATAR_COLORS.length];
+  $('cm-avatar-preview').style.background=c.avatar?'transparent':bg;
+  $('cm-avatar-preview').innerHTML=c.avatar?`<img src="${c.avatar}" alt=""/>`:
+    `<span class="initials">${getInitials(c.name)}</span>`;
+  $('cm-avatar-clear').style.display=c.avatar?'':'none';
+
+  $('cm-delete').style.display='';
+
+  // Lawn care info
+  const estH=estimateCurrentHeight(c);
+  const maxCut=getOneThirdMaxCut(estH);
+  const d=daysSince(c.lastService);
+  $('cm-est-height').textContent=estH.toFixed(1)+'"';
+  $('cm-max-cut').textContent=maxCut.toFixed(1)+'" min after cut';
+  $('cm-days-since').textContent=d!==null?d+' days':'Never serviced';
+  $('cm-heat-row').style.display=isHeatStress()?'':'none';
+  $('cm-recovery-row').style.display=c.recoveryMode?'':'none';
+  if(c.recoveryMode && c.recoveryStart){
+    $('cm-recovery-days').textContent=daysSince(c.recoveryStart)+' days in recovery';
+  }
+
+  // Cut history
+  const histEl=$('cm-history');
+  histEl.innerHTML='';
+  (c.cutHistory||[]).slice(-10).reverse().forEach(h=>{
+    const d=document.createElement('div');d.className='cm-history-item';
+    d.innerHTML=`<span class="hi-date">${new Date(h.date).toLocaleDateString()}</span><span class="hi-cut">${h.heightBefore||'?'}" → ${h.heightAfter||'?'}"</span>`;
+    histEl.appendChild(d);
+  });
+
+  $('cm-lawn').style.display='';
+  $('cust-modal').classList.add('open');
+}
+
+// QWERTY for name / address
+$('cm-name').addEventListener('click',()=>{
+  openQwerty('Customer Name',$('cm-name').value,val=>{$('cm-name').value=val;});
+});
+$('cm-address').addEventListener('click',()=>{
+  openQwerty('Address',$('cm-address').value,val=>{$('cm-address').value=val;});
+});
+
+// Avatar file
+$('cm-avatar-btn').onclick=()=>$('cm-avatar-file').click();
+$('cm-avatar-file').onchange=()=>{
+  const f=$('cm-avatar-file').files[0];
+  if(!f) return;
+  resizeImg(f,200,url=>{
+    $('cm-avatar-preview').style.background='transparent';
+    $('cm-avatar-preview').innerHTML=`<img src="${url}" alt=""/>`;
+    $('cm-avatar-clear').style.display='';
+  });
+};
+$('cm-avatar-clear').onclick=()=>{
+  $('cm-avatar-preview').innerHTML='<span class="initials">?</span>';
+  const bg=AVATAR_COLORS[(editIdx>=0?editIdx:S.customers.length)%AVATAR_COLORS.length];
+  $('cm-avatar-preview').style.background=bg;
+  $('cm-avatar-clear').style.display='none';
+  $('cm-avatar-file').value='';
+};
+
+// Save customer
+$('cm-save').onclick=()=>{
+  const name=$('cm-name').value.trim();
+  const address=$('cm-address').value.trim();
+  if(!name){alert('Please enter a customer name.');return;}
+
+  const avatarImg=$('cm-avatar-preview').querySelector('img');
+  const avatarUrl=avatarImg?avatarImg.src:'';
+
+  if(editIdx>=0){
+    // Update existing
+    const c=S.customers[editIdx];
+    c.name=name;
+    c.address=address;
+    c.frequency=$('cm-freq').value;
+    c.rate=parseFloat($('cm-rate').value)||0;
+    c.jobDescription=$('cm-job').value;
+    c.notes=$('cm-notes').value;
+    c.targetHeight=parseFloat($('cm-target-height').value)||3.5;
+    c.grassType=$('cm-grass-type').value;
+    c.avatar=avatarUrl;
+  } else {
+    // Geocode the address to get lat/lng, then create
+    const c={
+      id:'c_'+Date.now(),
+      name:name,
+      address:address,
+      lat:currentPos?currentPos.lat:DEFAULT_CENTER[1],
+      lng:currentPos?currentPos.lng:DEFAULT_CENTER[0],
+      avatar:avatarUrl,
+      avatarColor:AVATAR_COLORS[S.customers.length%AVATAR_COLORS.length],
+      frequency:$('cm-freq').value,
+      rate:parseFloat($('cm-rate').value)||0,
+      jobDescription:$('cm-job').value,
+      notes:$('cm-notes').value,
+      targetHeight:parseFloat($('cm-target-height').value)||3.5,
+      grassType:$('cm-grass-type').value,
+      lastService:null,
+      grassHeight:null,
+      recoveryMode:false,
+      recoveryStart:null,
+      cutHistory:[]
+    };
+    S.customers.push(c);
+    // Try geocoding async
+    geocodeAddress(address,S.customers.length-1);
+  }
+  saveStore(S);
+  $('cust-modal').classList.remove('open');
+  rebuildAll();
+};
+
+$('cm-cancel').onclick=()=>{$('cust-modal').classList.remove('open');};
+$('cust-modal').addEventListener('click',e=>{if(e.target===$('cust-modal'))$('cust-modal').classList.remove('open');});
+
+$('cm-delete').onclick=()=>{
+  if(editIdx<0) return;
+  openConfirm('Delete Customer?','Remove "'+S.customers[editIdx].name+'" and all their service history?',()=>{
+    S.customers.splice(editIdx,1);
+    selectedIdx=-1;
+    editIdx=-1;
+    saveStore(S);
+    $('cust-modal').classList.remove('open');
+    rebuildAll();
+  });
+};
+
+/* ─────────── Geocoding ─────────── */
+async function geocodeAddress(address,idx){
+  if(!address) return;
+  const token=getToken();
+  if(!token) return;
+  try{
+    const res=await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&limit=1`);
+    const data=await res.json();
+    if(data.features && data.features.length>0){
+      const[lng,lat]=data.features[0].center;
+      if(S.customers[idx]){
+        S.customers[idx].lat=lat;
+        S.customers[idx].lng=lng;
+        saveStore(S);
+        rebuildAll();
+      }
+    }
+  }catch(e){console.warn('Geocode error:',e);}
+}
+
+/* ─────────── Service Log Sheet ─────────── */
+let serviceIdx=-1;
+
+function openServiceSheet(idx){
+  serviceIdx=idx;
+  const c=S.customers[idx];
+  if(!c) return;
+  $('svc-title').textContent='Service: '+c.name;
+
+  const estH=estimateCurrentHeight(c);
+  const maxCut=getOneThirdMaxCut(estH);
+  const target=c.targetHeight||3.5;
+  const canCut=maxCut<=target;
+
+  let info='<strong>Estimated Height:</strong> '+estH.toFixed(1)+'"<br/>';
+  info+='<strong>Target Height:</strong> '+target+'"<br/>';
+  info+='<strong>1/3 Rule Min After Cut:</strong> '+maxCut.toFixed(1)+'"<br/>';
+
+  if(isHeatStress()){
+    info+='<br/><span class="warn">⚠ HEAT STRESS ('+currentTemp+'°F) — Raise cut height 0.5-1" or skip.</span>';
+    if(!canCut) info+='<br/><span class="warn">⚠ Grass too short to cut following 1/3 rule.</span>';
+  } else if(!canCut){
+    info+='<br/><span class="warn">⚠ Grass may be too short — consider raising cut height.</span>';
+  }
+
+  if(c.recoveryMode){
+    const rd=daysSince(c.recoveryStart);
+    info+='<br/><strong style="color:var(--warn)">Recovery Mode:</strong> Day '+rd+' — Cut 0.5" higher than normal.';
+  }
+
+  $('svc-lawn-info').innerHTML=info;
+  $('svc-height-before').value=estH.toFixed(1);
+  $('svc-height-after').value=isHeatStress()?(target+0.5).toFixed(1):target.toFixed(1);
+  $('svc-notes').value='';
+  $('svc-sheet').classList.add('open');
+}
+
+$('svc-close').onclick=()=>{$('svc-sheet').classList.remove('open');serviceIdx=-1;};
+
+$('svc-complete').onclick=()=>{
+  if(serviceIdx<0) return;
+  const c=S.customers[serviceIdx];
+  const hBefore=parseFloat($('svc-height-before').value)||0;
+  const hAfter=parseFloat($('svc-height-after').value)||0;
+  const notes=$('svc-notes').value;
+
+  // Check 1/3 rule
+  if(hBefore>0 && hAfter>0){
+    const removed=hBefore-hAfter;
+    const maxRemove=hBefore/3;
+    if(removed>maxRemove*1.1){
+      if(!confirm('⚠ This cut removes '+(removed).toFixed(1)+'" (max recommended: '+(maxRemove).toFixed(1)+'"). Continue anyway?')) return;
+      // Enter recovery mode
+      c.recoveryMode=true;
+      c.recoveryStart=Date.now();
+    } else if(c.recoveryMode){
+      // Check if we can exit recovery (2 good cuts in a row)
+      const recentGoodCuts=(c.cutHistory||[]).slice(-2).filter(h=>{
+        const r=h.heightBefore-h.heightAfter;
+        return r<=h.heightBefore/3;
+      }).length;
+      if(recentGoodCuts>=1){
+        c.recoveryMode=false;
+        c.recoveryStart=null;
+      }
+    }
+  }
+
+  c.lastService=Date.now();
+  c.grassHeight=hAfter||c.targetHeight;
+  c.cutHistory.push({
+    date:Date.now(),
+    heightBefore:hBefore,
+    heightAfter:hAfter,
+    notes:notes
+  });
+
+  saveStore(S);
+  $('svc-sheet').classList.remove('open');
+  serviceIdx=-1;
+  rebuildAll();
+};
+
+$('svc-skip').onclick=()=>{
+  if(serviceIdx<0) return;
+  const c=S.customers[serviceIdx];
+  c.cutHistory.push({
+    date:Date.now(),
+    heightBefore:estimateCurrentHeight(c),
+    heightAfter:estimateCurrentHeight(c),
+    notes:'Skipped — heat stress'
+  });
+  // Don't update lastService so it stays "due"
+  saveStore(S);
+  $('svc-sheet').classList.remove('open');
+  serviceIdx=-1;
+  renderCustomerList();
+};
+
+/* ─────────── Search ─────────── */
+sbSearch.addEventListener('input',()=>renderCustomerList(sbSearch.value));
+$('sb-add').onclick=openAddCustomer;
+
+/* ─────────── Map Buttons ─────────── */
+$('btn-center').onclick=()=>{
+  if(currentPos&&map) map.flyTo({center:[currentPos.lng,currentPos.lat],zoom:DEFAULT_ZOOM,duration:800});
+  else alert('Waiting for GPS fix…');
+};
+
+$('btn-fit').onclick=()=>{
+  if(!map||S.customers.length===0) return;
+  const bounds=new mapboxgl.LngLatBounds();
+  S.customers.forEach(c=>{if(c.lat&&c.lng) bounds.extend([c.lng,c.lat]);});
+  if(currentPos) bounds.extend([currentPos.lng,currentPos.lat]);
+  if(!bounds.isEmpty()) map.fitBounds(bounds,{padding:60,duration:800});
+};
+
+/* ─────────── Rebuild All ─────────── */
+function rebuildAll(){
+  renderCustomerList();
+  if(map) rebuildMapMarkers();
+  updateTempDisplay();
+}
+
+/* ─────────── Image Resize ─────────── */
+function resizeImg(file,max,cb){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      let w=img.width,h=img.height;
+      if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+      c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+      cb(c.toDataURL('image/jpeg',0.7));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ─────────── QWERTY Keyboard ─────────── */
+const qwModal=$('qw-modal'),qwTitle=$('qw-title'),qwText=$('qw-text'),qwRowsEl=$('qw-rows');
+let qwVal='',qwCb=null,qwShift=true,qwNumMode=false;
+const QW_ALPHA=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['shift','Z','X','C','V','B','N','M','back'],['123','space','.']];
+const QW_NUM=[['1','2','3','4','5','6','7','8','9','0'],['!','@','#','$','%','^','&','*','(',')'],['shift','-','+','=','/',',','.','?','back'],['ABC','space','@']];
+
+function buildQw(){
+  qwRowsEl.innerHTML='';
+  const layout=qwNumMode?QW_NUM:QW_ALPHA;
+  for(const row of layout){
+    const r=document.createElement('div');r.className='qw-row';
+    for(const k of row){
+      const b=document.createElement('button');b.type='button';
+      if(k==='shift'){b.className='qk qk-sh'+(qwShift?' on':'');b.textContent='⇧';b.onclick=()=>{qwShift=!qwShift;buildQw();};}
+      else if(k==='back'){b.className='qk qk-bk';b.textContent='⌫';b.onclick=()=>{qwVal=qwVal.slice(0,-1);qwText.textContent=qwVal;};}
+      else if(k==='space'){b.className='qk qk-sp';b.textContent='SPACE';b.onclick=()=>{qwVal+=' ';qwText.textContent=qwVal;};}
+      else if(k==='123'){b.className='qk';b.style.minWidth='48px';b.style.fontSize='12px';b.textContent='123';b.onclick=()=>{qwNumMode=true;buildQw();};}
+      else if(k==='ABC'){b.className='qk';b.style.minWidth='48px';b.style.fontSize='12px';b.textContent='ABC';b.onclick=()=>{qwNumMode=false;buildQw();};}
+      else{b.className='qk';const ch=(!qwNumMode&&qwShift)?k.toUpperCase():(!qwNumMode?k.toLowerCase():k);b.textContent=ch;b.onclick=()=>{qwVal+=ch;qwText.textContent=qwVal;if(!qwNumMode&&qwShift){qwShift=false;buildQw();}};}
+      r.appendChild(b);
+    }
+    qwRowsEl.appendChild(r);
+  }
+}
+
+function openQwerty(title,initial,cb){
+  qwTitle.textContent=title;qwVal=initial||'';qwText.textContent=qwVal;qwCb=cb;qwShift=!initial;qwNumMode=false;
+  buildQw();qwModal.classList.add('open');
+}
+function closeQwerty(){qwModal.classList.remove('open');qwCb=null;}
+$('qw-save').onclick=()=>{if(qwCb)qwCb(qwVal);closeQwerty();};
+$('qw-cancel').onclick=closeQwerty;
+qwModal.addEventListener('click',e=>{if(e.target===qwModal)closeQwerty();});
+
+/* ─────────── Confirm Modal ─────────── */
+let cfCb=null;
+function openConfirm(title,msg,cb){
+  $('cf-title').textContent=title;$('cf-msg').textContent=msg;cfCb=cb;
+  $('cf-modal').classList.add('open');
+}
+$('cf-yes').onclick=()=>{if(cfCb)cfCb();$('cf-modal').classList.remove('open');cfCb=null;};
+$('cf-no').onclick=()=>{$('cf-modal').classList.remove('open');cfCb=null;};
+$('cf-modal').addEventListener('click',e=>{if(e.target===$('cf-modal')){$('cf-modal').classList.remove('open');cfCb=null;}});
+
+/* ─────────── Navigation ─────────── */
+$('mow-back').onclick=()=>{
+  if(watchId!==null) navigator.geolocation.clearWatch(watchId);
+  window.location.href='index.html';
+};
+
+/* ─────────── Boot ─────────── */
+function boot(){
+  updateTempDisplay();
+  renderCustomerList();
+  const token=getToken();
+  if(!token) showTokenModal();
+  else initMap(token);
+}
+boot();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#ffd400" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="YourLandscaper" />
+  <link rel="manifest" href="manifest.json" />
+  <title>YourLandscape — Calculator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1><span class="title-your">Your</span><span class="title-landscaper">Landscaper</span></h1>
+      <div class="edit-wrapper">
+        <button id="edit-toggle" class="edit-icon-btn" title="Edit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Edit</span>
+        </button>
+        <div id="edit-menu" class="edit-menu" style="display:none">
+          <button id="edit-bulk-mat" class="edit-menu-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="22" height="18" rx="2"/><line x1="1" y1="9" x2="23" y2="9"/><line x1="8" y1="9" x2="8" y2="21"/></svg>
+            <span>Edit Bulk Material</span>
+          </button>
+          <button id="edit-delivery" class="edit-menu-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Edit Delivery</span>
+          </button>
+          <button id="edit-admin-config" class="edit-menu-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.24.3.46.64.6 1a1.65 1.65 0 0 0 1 .33H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1 .33c-.14.36-.36.7-.6 1z"></path></svg>
+            <span>Admin Configuration</span>
+          </button>
+          <!-- Edit Scoop Size/Coverage — moved under Admin Configuration (feature #6) -->
+          <button id="edit-clear-inventory" class="edit-menu-item" title="Clear Inventory List" aria-label="Clear Inventory List">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            <span>Clear Inventory List</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="top-row">
+        <div class="card">
+          <label>Quantity</label>
+          <input id="quantity" type="number" min="0" value="0" />
+        </div>
+        <div class="card">
+          <label>Length</label>
+          <input id="calc-length" type="number" min="0" value="0" />
+        </div>
+        <div class="card">
+          <label>Width</label>
+          <input id="calc-width" type="number" min="0" value="0" />
+        </div>
+        <div class="card">
+          <label>Square Footage</label>
+          <input id="sqft" type="number" min="0" value="0" />
+        </div>
+        <div class="card">
+          <label>Depth</label>
+          <div class="depth-row">
+            <input id="depth" type="number" min="0" value="0" />
+            <select id="depth-unit"><option value="in">in</option><option value="ft">ft</option></select>
+          </div>
+        </div>
+        <div class="card">
+          <label>Material Type</label>
+          <select id="material-type" style="padding:8px;border-radius:6px;border:1px solid #222;background:transparent;color:var(--white)">
+            <option value="auto">Auto-Detect</option>
+            <option value="mulch">Mulch (600–800 lbs/yd³)</option>
+            <option value="topsoil">Topsoil (2,200 lbs/yd³)</option>
+            <option value="stone">Crushed Stone/Gravel (2,700 lbs/yd³)</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="material-selection card">
+        <div class="left">
+          <label>Material</label>
+          <input id="search" placeholder="Search inventory..." />
+          <div id="favorites" class="favorites"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button id="open-inv">Add Material</button>
+          </div>
+        </div>
+        <div class="right">
+          <label>Scoop size</label>
+          <div class="scoops">
+            <label class="scoop-btn"><input type="radio" name="scoop" value="small" checked /><span>Small</span></label>
+            <label class="scoop-btn"><input type="radio" name="scoop" value="medium" /><span>Medium</span></label>
+            <label class="scoop-btn"><input type="radio" name="scoop" value="large" /><span>Large</span></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="costs card">
+        <div class="row hidden-ui">
+          <label>Flyer cost</label>
+          <input id="flyer" type="number" min="0" value="0" />
+        </div>
+        <div class="row">
+          <label>Delivery</label>
+          <div id="delivery" class="delivery"></div>
+        </div>
+      </section>
+
+      <section class="summary card">
+        <div class="calc">
+          <div>Scoops needed: <span id="scoops" class="result">0</span></div>
+          <div>Material cost: <span id="matcost" class="result">$0.00</span></div>
+          <div>Tax amount: <span id="taxamt" class="result">$0.00</span></div>
+          <div>Final total: <span id="final" class="result yellow">$0.00</span></div>
+          <!-- Compaction Factor Toggle -->
+          <div id="compaction-row" style="margin-top:8px;display:flex;align-items:center;gap:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted);font-size:13px;margin:0">
+              <input type="checkbox" id="compaction-toggle" style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer" />
+              <span>+15% Compaction Factor</span>
+            </label>
+            <span id="compaction-badge" style="display:none;font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(255,212,0,0.12);color:var(--accent);font-weight:600">ACTIVE</span>
+          </div>
+          <div style="margin-top:8px;border-top:1px dashed #1a1a1a;padding-top:8px;color:var(--muted);font-size:13px">
+            <div>Material Selected: <span id="out-material">—</span></div>
+            <div>Scoop Size: <span id="out-scoop">—</span></div>
+            <div>Square Footage: <span id="out-sqft">0.00 sq ft</span></div>
+            <div>Depth: <span id="out-depth">0.00 in</span></div>
+            <div>Base Cubic Yards: <span id="out-base-cy" class="price">0.00 yd³</span></div>
+            <div id="out-final-cy-row" style="display:none">Final Yards (+15%): <span id="out-final-cy" class="price" style="color:var(--accent)">0.00 yd³</span></div>
+            <div>Required Cubic Yards: <span id="out-cy" class="price">0.00 yd³</span></div>
+            <div>Bucket Capacity: <span id="out-bucket" class="price">— yd³</span></div>
+            <div>Price per Scoop: <span id="out-price-scoop" class="price">$0.00</span></div>
+            <div>Material Density: <span id="out-density">—</span></div>
+            <div style="font-size:14px;font-weight:600;color:var(--accent)">Estimated Weight: <span id="out-weight" style="font-weight:700">—</span></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="add-order">Add to Order</button>
+          <button id="clear-order">Clear Order</button>
+        </div>
+      </section>
+
+      <section class="orders card">
+        <div class="orders-header">
+          <button id="new-order">+ New Order</button>
+        </div>
+        <ul id="order-list" class="order-list"></ul>
+      </section>
+
+      <section class="results card" id="results">
+        <h3>Totals</h3>
+        <div>Delivery: <span id="total-delivery">$0.00</span></div>
+        <div>Total (no tax): <span id="total-notax">$0.00</span></div>
+        <div>Tax: <span id="total-tax">$0.00</span></div>
+        <div class="big">Grand total: <span id="grand">$0.00</span></div>
+      </section>
+    </main>
+
+    <!-- Inventory Modal -->
+    <div id="inv-modal" class="modal">
+      <div class="modal-content card">
+        <h3>Inventory</h3>
+        <div class="modal-bar" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+          <button id="btn-import" class="scoop-btn">Import Materials</button>
+          <button id="btn-add" class="scoop-btn">Add Item</button>
+          <button id="btn-bulk-upload" class="scoop-btn">Bulk Upload</button>
+          <div style="flex:1"></div>
+          <input id="inv-search" placeholder="Search inventory..." style="width:260px;padding:8px;border-radius:8px;border:1px solid #222;background:transparent;color:var(--white)" />
+        </div>
+        <div id="inv-list" class="inv-list"></div>
+
+        <div id="import-panel" style="display:none;margin-bottom:8px">
+          <label style="display:block;color:var(--muted);font-size:13px;margin-bottom:6px">Paste CSV (header: name,cov,price_small,price_medium,price_large,stock)</label>
+          <textarea id="import-text" rows="6" style="width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid #222;color:var(--white)"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+            <button id="do-import">Import</button>
+            <button id="cancel-import">Cancel</button>
+          </div>
+        </div>
+
+        <div id="bulk-panel" style="display:none;margin-bottom:8px">
+          <label style="display:block;color:var(--muted);font-size:13px;margin-bottom:6px">Select a CSV file to upload. Header: name,cov,price_small,price_medium,price_large,stock</label>
+          <input id="bulk-file" type="file" accept=".csv" style="display:none" />
+          <div id="bulk-preview" style="max-height:260px;overflow:auto;border:1px solid #222;padding:8px;border-radius:8px;background:linear-gradient(180deg,#0f1113,#0b0b0d)"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+            <button id="confirm-bulk">Import Selected</button>
+            <button id="cancel-bulk">Cancel</button>
+          </div>
+        </div>
+
+        <div id="edit-panel">
+          <h4>Add / Edit Item</h4>
+          <div class="form-grid simple">
+            <input id="item-name" placeholder="Name" />
+            <div class="price-row">
+              <input id="price-small" placeholder="Price Small" type="number" />
+              <input id="price-medium" placeholder="Price Medium" type="number" />
+              <input id="price-large" placeholder="Price Large" type="number" />
+            </div>
+            <input id="cov" type="hidden" />
+            <input id="stock" type="hidden" />
+          </div>
+          <div class="modal-actions">
+            <div style="margin-right:auto;display:flex;gap:8px"></div>
+            <button id="remove-item" class="back-btn">Remove</button>
+            <button id="add-bulk" class="back-btn">Add Bulk</button>
+            <button id="save-item">Save</button>
+            <button id="back-inv" class="back-btn">Back</button>
+            <button id="close-inv">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear Inventory Confirmation Modal -->
+    <div id="clear-inv-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="clear-inv-title">
+      <div class="modal-content card clear-inv-modal-content">
+        <h3 id="clear-inv-title">Warning</h3>
+        <p class="clear-inv-message">Are you sure you want to delete this Inventory?</p>
+        <div class="modal-actions">
+          <button id="clear-inv-no" class="clear-inv-action">No</button>
+          <button id="clear-inv-yes" class="clear-inv-action">Yes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Configuration Modal -->
+    <div id="admin-config-modal" class="modal">
+      <div class="modal-content card" style="max-width:920px">
+        <h3>Admin Configuration</h3>
+        <div class="admin-grid">
+          <div class="admin-card">
+            <h4>Categories</h4>
+            <div style="display:flex;gap:8px">
+              <input id="admin-category-input" placeholder="e.g. Mulch" />
+              <button id="admin-add-category">Add</button>
+            </div>
+            <div id="admin-category-list" class="admin-list"></div>
+          </div>
+
+          <div class="admin-card">
+            <h4>Scoop Definitions</h4>
+            <div id="admin-scoop-list" class="admin-list"></div>
+            <small style="color:var(--muted)">Set cubic yards, optional weight, and default price per scoop.</small>
+          </div>
+
+          <div class="admin-card admin-wide">
+            <h4>Item Configuration (Manual)</h4>
+            <div class="admin-form-grid">
+              <select id="admin-item-category"></select>
+              <input id="admin-item-name" placeholder="Item name" />
+              <select id="admin-item-type">
+                <option value="soil">Soil</option>
+                <option value="mulch">Mulch</option>
+                <option value="stone">Stone</option>
+                <option value="custom">Custom</option>
+              </select>
+              <input id="admin-item-cov2in" type="number" min="0" step="0.01" placeholder="Coverage @2in (sq ft/scoop)" />
+              <input id="admin-item-price-small" type="number" min="0" step="0.01" placeholder="Price Small" />
+              <input id="admin-item-price-medium" type="number" min="0" step="0.01" placeholder="Price Medium" />
+              <input id="admin-item-price-large" type="number" min="0" step="0.01" placeholder="Price Large" />
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+              <button id="admin-save-item">Save Item</button>
+            </div>
+          </div>
+
+          <div class="admin-card admin-wide">
+            <h4>Upload Price List</h4>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="admin-upload-file" type="file" accept=".json,.csv" />
+              <button id="admin-process-upload">Import File</button>
+            </div>
+            <small style="color:var(--muted)">CSV header supported: category,name,material_type,coverage_2in,price_small,price_medium,price_large,stock</small>
+          </div>
+        </div>
+          <div class="admin-card admin-wide">
+            <h4>Scoop Size / Coverage</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0 0 10px">Configure cubic yards, weight, and coverage reference values for each scoop size.</p>
+            <button id="admin-open-scov" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;border:1px solid rgba(255,212,0,0.3);background:rgba(255,212,0,0.08);color:var(--accent);font-weight:600;font-size:14px;cursor:pointer;transition:all .12s ease;font-family:Inter,system-ui,Arial,Helvetica,sans-serif">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              Edit Scoop Size / Coverage
+            </button>
+          </div>
+
+        <div class="modal-actions" style="margin-top:12px">
+          <button id="admin-close">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Delivery Modal -->
+    <div id="del-modal" class="modal">
+      <div class="modal-content card">
+        <h3>Edit Delivery Locations</h3>
+        <div id="del-list" style="margin-bottom:12px"></div>
+        <h4>Add Location</h4>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">
+          <div style="flex:2"><label>Location Name</label><input id="del-name" placeholder="e.g. Shamokin, Coal Township" /></div>
+          <div style="flex:1"><label>Price</label><input id="del-price" type="number" placeholder="40" /></div>
+          <button id="save-del" style="height:36px">Add</button>
+        </div>
+        <div class="modal-actions">
+          <button id="clear-del" class="back-btn" style="margin-right:auto">Clear All</button>
+          <button id="close-del" class="back-btn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scoop Size / Coverage Modal -->
+    <div id="scoop-cov-modal" class="modal">
+      <div class="modal-content card" style="max-width:860px">
+        <h3>Scoop Size / Coverage Reference</h3>
+        <div class="scov-table">
+          <div class="scov-header">
+            <div class="scov-cell scov-label-col">Scoop Size</div>
+            <div class="scov-cell">Cubic Yards</div>
+            <div class="scov-cell">Soil/Stone Wt (lbs)</div>
+            <div class="scov-cell">3/4" Dec. Stone 2" Cov (sq ft)</div>
+            <div class="scov-cell">Mulch / Topsoil 2" Cov (sq ft)</div>
+          </div>
+          <div class="scov-row" data-size="small">
+            <div class="scov-cell scov-label-col">Small</div>
+            <div class="scov-cell"><input id="scov-cy-small" type="number" min="0" step="0.01" /></div>
+            <div class="scov-cell"><input id="scov-wt-small" type="number" min="0" step="1" /></div>
+            <div class="scov-cell"><input id="scov-ds-small" type="number" min="0" step="1" /></div>
+            <div class="scov-cell"><input id="scov-mt-small" type="number" min="0" step="1" /></div>
+          </div>
+          <div class="scov-row" data-size="medium">
+            <div class="scov-cell scov-label-col">Medium</div>
+            <div class="scov-cell"><input id="scov-cy-medium" type="number" min="0" step="0.01" /></div>
+            <div class="scov-cell"><input id="scov-wt-medium" type="number" min="0" step="1" /></div>
+            <div class="scov-cell"><input id="scov-ds-medium" type="number" min="0" step="1" /></div>
+            <div class="scov-cell"><input id="scov-mt-medium" type="number" min="0" step="1" /></div>
+          </div>
+          <div class="scov-row" data-size="large">
+            <div class="scov-cell scov-label-col">Large</div>
+            <div class="scov-cell"><input id="scov-cy-large" type="number" min="0" step="0.01" /></div>
+            <div class="scov-cell"><input id="scov-wt-large" type="number" min="0" step="1" /></div>
+            <div class="scov-cell"><input id="scov-ds-large" type="number" min="0" step="1" /></div>
+            <div class="scov-cell"><input id="scov-mt-large" type="number" min="0" step="1" /></div>
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top:12px">
+          <button id="save-scov">Save</button>
+          <button id="close-scov">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Material Picker Modal -->
+    <div id="add-mat-modal" class="modal">
+      <div class="modal-content card" style="max-width:600px">
+        <h3>Add Material</h3>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Select materials from your inventory to display in the Material section.</p>
+        <input id="add-mat-search" placeholder="Search materials..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #222;background:linear-gradient(180deg,#0f1113,#0b0b0d);color:var(--white);margin-bottom:10px;font-size:14px" />
+        <div id="add-mat-list" class="add-mat-list"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button id="add-mat-done">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Number Pad -->
+    <div id="numpad-overlay" class="numpad-overlay" style="display:none">
+      <div class="numpad-backdrop"></div>
+      <div class="numpad">
+        <div class="numpad-display">
+          <span class="numpad-label" id="numpad-label">Quantity</span>
+          <span class="numpad-value" id="numpad-value">0</span>
+        </div>
+        <div class="numpad-keys">
+          <button class="numpad-key" data-key="7">7</button>
+          <button class="numpad-key" data-key="8">8</button>
+          <button class="numpad-key" data-key="9">9</button>
+          <button class="numpad-key" data-key="4">4</button>
+          <button class="numpad-key" data-key="5">5</button>
+          <button class="numpad-key" data-key="6">6</button>
+          <button class="numpad-key" data-key="1">1</button>
+          <button class="numpad-key" data-key="2">2</button>
+          <button class="numpad-key" data-key="3">3</button>
+          <!-- Quantity bottom row: spacer, 0, backspace -->
+          <div class="numpad-key numpad-spacer np-qty"></div>
+          <button class="numpad-key np-qty" data-key="0">0</button>
+          <button class="numpad-key numpad-back np-qty" data-key="back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          </button>
+          <!-- SqFt bottom row: delete icon (no period), 0, backspace -->
+          <button class="numpad-key numpad-back np-sqft" data-key="del">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          </button>
+          <button class="numpad-key np-sqft" data-key="0">0</button>
+          <button class="numpad-key numpad-back np-sqft" data-key="back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          </button>
+          <!-- Depth bottom row: ft button, 0, in button (no commas/periods) -->
+          <button class="numpad-key np-depth np-depth-unit" data-key="ft">ft</button>
+          <button class="numpad-key np-depth" data-key="0">0</button>
+          <button class="numpad-key np-depth np-depth-unit" data-key="in">in</button>
+        </div>
+        <div class="numpad-actions">
+          <button class="numpad-clear" id="numpad-clear">Clear</button>
+          <button class="numpad-back-action" id="numpad-back-btn" data-key="back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          </button>
+          <button class="numpad-done" id="numpad-done">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Surcharge Overlay ═══ -->
+    <div id="surcharge-wrap" class="surcharge-wrap">
+      <button id="surcharge-btn" class="surcharge-btn">SURCHARGE</button>
+      <div id="surcharge-menu" class="surcharge-menu" style="display:none">
+        <button class="sur-opt" id="sur-discount" title="10% Discount">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+          <span>−10%</span>
+        </button>
+        <button class="sur-opt" id="sur-fuel" title="5% Fuel Surcharge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v17"/><path d="M13 10h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9l-3-3"/><rect x="5" y="7" width="6" height="5"/></svg>
+          <span>+5% Fuel</span>
+        </button>
+        <button class="sur-opt" id="sur-cc" title="3% Credit Card Fee">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <span>+3% CC</span>
+        </button>
+        <button class="sur-opt" id="sur-tax" title="Add Sales Tax">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M4 11h16"/><path d="M4 15h10"/><path d="M4 19h6"/></svg>
+          <span>+Tax</span>
+        </button>
+        <button class="sur-opt sur-undo" id="sur-undo" title="Remove All Modifiers">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 0 1 0 10H9"/><polyline points="3 10 7 6"/><polyline points="3 10 7 14"/></svg>
+          <span>Undo</span>
+        </button>
+      </div>
+    </div>
+    <!-- Surcharge live ticker (visible when modifiers active) -->
+    <div id="surcharge-ticker" class="surcharge-ticker" style="display:none"></div>
+
+    <footer>
+      <div style="text-align:center;margin-bottom:10px">
+        <button id="sales-sheet-btn" class="sales-sheet-btn">Sales Sheet</button>
+      </div>
+      <small>Persistent data stored locally.</small>
+    </footer>
+
+    <!-- Floating Action Menu — bottom right -->
+    <div id="face-menu-wrap" class="face-menu-wrap">
+      <!-- Expanding options (hidden by default) -->
+      <div id="face-menu-options" class="face-menu-options" style="display:none">
+        <a href="mowing.html" class="face-opt face-opt-mow" title="Mowing Jobs">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l4-4 4 4v14"/><path d="M9 3v4"/><circle cx="7" cy="15" r="2"/><circle cx="11" cy="15" r="2"/><path d="M15 21v-6h6v6"/><path d="M18 15v-3"/></svg>
+          <span>Mowing</span>
+        </a>
+        <a href="maps.html" class="face-opt" title="Open Maps">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Maps</span>
+        </a>
+        <button class="face-opt" id="face-opt-contracts" title="Contracts Page">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Contracts</span>
+        </button>
+      </div>
+      <!-- The cute face icon trigger -->
+      <button id="face-btn" class="face-btn" title="Menu">
+        <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="eyeShine" cx="35%" cy="35%" r="50%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+              <stop offset="30%" stop-color="#5588cc" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#111" stop-opacity="1"/>
+            </radialGradient>
+          </defs>
+          <circle cx="20" cy="20" r="18" fill="#f0f0f0" stroke="#d0d0d0" stroke-width="1.5"/>
+          <circle cx="13" cy="20" r="4.5" fill="url(#eyeShine)"/>
+          <circle cx="27" cy="20" r="4.5" fill="url(#eyeShine)"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  </div>
+
+  <!-- Your Contractor Page -->
+  <div id="contractor-page" class="contractor-page" style="display:none">
+    <header class="contractor-header">
+      <button id="contractor-back" class="contractor-back-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h1 class="contractor-title"><span class="ct-your">Your</span><span class="ct-contractor">Landscaper</span></h1>
+      <div style="width:36px"></div>
+    </header>
+
+    <main class="contractor-main">
+      <div class="contractor-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3fc34a" stroke-width="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p>No contracts yet</p>
+        <div class="contractor-main-btns">
+          <button class="ca-btn ca-blue" id="ca-new">New Contract</button>
+          <button class="ca-btn ca-red" id="ca-contracts">My Contracts</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- FAB + Action Bar -->
+    <div class="contractor-fab-wrap">
+      <div id="contractor-actions" class="contractor-actions" style="display:none">
+        <div class="ca-row">
+          <button class="ca-btn ca-white" id="ca-save">Save</button>
+        </div>
+        <div class="ca-row">
+          <button class="ca-btn ca-green" id="ca-send">Send</button>
+          <button class="ca-btn ca-purple" id="ca-print">Print</button>
+          <button class="ca-btn ca-yellow" id="ca-edit">Edit</button>
+        </div>
+      </div>
+      <button id="contractor-fab" class="contractor-fab">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+  </div>
+
+  <!-- Sales Sheet Page -->
+  <div id="sales-sheet-page" class="sales-sheet-page" style="display:none">
+    <header class="ss-header">
+      <button id="ss-back" class="contractor-back-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h1 class="ss-title"><span class="ss-your">Your</span><span class="ss-landscaper">Landscaper</span></h1>
+      <div style="width:36px"></div>
+    </header>
+    <div class="ss-table-wrap">
+      <table class="ss-table">
+        <thead>
+          <tr>
+            <th class="ss-edit-col"></th>
+            <th>Customer</th>
+            <th>Date</th>
+            <th>P/U or Deliver</th>
+            <th>Quantity</th>
+            <th>Material</th>
+            <th>Price Per Item</th>
+            <th>Total</th>
+            <th>Tax</th>
+            <th>Modifiers</th>
+            <th>Grand Total</th>
+            <th>Transaction Type</th>
+          </tr>
+        </thead>
+        <tbody id="ss-body"></tbody>
+      </table>
+      <div id="ss-empty" class="ss-empty">No sales records yet</div>
+    </div>
+  </div>
+
+  <!-- Order Confirmation Modal — Step 1 of Complete Order flow -->
+  <div id="order-confirm-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="order-confirm-title">
+    <div class="modal-content card order-confirm-modal-content">
+      <h3 id="order-confirm-title">Complete Order</h3>
+      <p class="order-confirm-message">Are you sure you're done with this order?</p>
+      <div class="order-confirm-icons">
+        <!-- No icon (X mark) -->
+        <button id="order-confirm-no" class="order-confirm-icon-btn order-no" title="No">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          <span>No</span>
+        </button>
+        <!-- Yes icon (Check mark) -->
+        <button id="order-confirm-yes" class="order-confirm-icon-btn order-yes" title="Yes">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>Yes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QWERTY Keyboard Modal — Step 2: Customer Name Entry -->
+  <div id="qwerty-modal" class="modal" role="dialog" aria-modal="true" aria-label="Enter Customer Name">
+    <div class="modal-content card qwerty-modal-content">
+      <h3 class="qwerty-title">Customer Name</h3>
+      <!-- Display area showing typed name -->
+      <div class="qwerty-display">
+        <span id="qwerty-text" class="qwerty-value"></span>
+        <span class="qwerty-cursor">|</span>
+      </div>
+      <!-- Keyboard rows built by JS -->
+      <div id="qwerty-rows" class="qwerty-rows"></div>
+      <!-- Delivery + Transaction Type inline selectors -->
+      <div class="qwerty-options-row">
+        <div class="qwerty-opt-group">
+          <span class="qwerty-opt-label">Delivery</span>
+          <div class="qwerty-opt-btns">
+            <label class="qwerty-opt-btn"><input type="radio" name="qw-delivery" value="P/U" checked /><span>P/U</span></label>
+            <label class="qwerty-opt-btn"><input type="radio" name="qw-delivery" value="Deliver" /><span>Deliver</span></label>
+          </div>
+        </div>
+        <div class="qwerty-opt-group">
+          <span class="qwerty-opt-label">Transaction</span>
+          <div class="qwerty-opt-btns">
+            <label class="qwerty-opt-btn"><input type="radio" name="qw-txn" value="Cash" checked /><span>Cash</span></label>
+            <label class="qwerty-opt-btn"><input type="radio" name="qw-txn" value="Credit" /><span>Credit</span></label>
+            <label class="qwerty-opt-btn"><input type="radio" name="qw-txn" value="Check" /><span>Check</span></label>
+          </div>
+        </div>
+      </div>
+      <!-- Action buttons -->
+      <div class="qwerty-actions">
+        <button id="qwerty-clear" class="qwerty-action-btn qwerty-clear-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          Clear
+        </button>
+        <button id="qwerty-save" class="qwerty-action-btn qwerty-save-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Checkout Modal -->
+  <div id="checkout-modal" class="modal">
+    <div class="modal-content card" style="max-width:440px">
+      <h3>Complete Order</h3>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <label>Customer Name</label>
+          <input id="ck-customer" type="text" placeholder="Customer name..." style="width:100%;padding:8px;border-radius:6px;border:1px solid #222;background:transparent;color:var(--white)" />
+        </div>
+        <div>
+          <label>Delivery Method</label>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <label class="scoop-btn"><input type="radio" name="ck-delivery" value="P/U" checked /><span>P/U</span></label>
+            <label class="scoop-btn"><input type="radio" name="ck-delivery" value="Deliver" /><span>Deliver</span></label>
+          </div>
+        </div>
+        <div>
+          <label>Transaction Type</label>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <label class="scoop-btn"><input type="radio" name="ck-txn" value="Cash" checked /><span>Cash</span></label>
+            <label class="scoop-btn"><input type="radio" name="ck-txn" value="Credit" /><span>Credit</span></label>
+            <label class="scoop-btn"><input type="radio" name="ck-txn" value="Check" /><span>Check</span></label>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button id="ck-cancel">Cancel</button>
+          <button id="ck-confirm" style="background:var(--accent);color:#111;font-weight:700">Confirm Order</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sales Sheet Edit Confirmation Modal — red warning -->
+  <div id="ss-edit-confirm-modal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-content card ss-edit-confirm-content">
+      <h3 class="ss-edit-warn-title">Warning</h3>
+      <p class="ss-edit-warn-msg">The following action will permanently modify the selected record. Do you want to proceed?</p>
+      <div class="order-confirm-icons">
+        <button id="ss-edit-confirm-no" class="order-confirm-icon-btn order-no" title="No">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          <span>No</span>
+        </button>
+        <button id="ss-edit-confirm-yes" class="order-confirm-icon-btn order-yes" title="Yes">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>Yes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.warn('SW registration failed:', err));
+    }
+  </script>
+</body>
+</html>

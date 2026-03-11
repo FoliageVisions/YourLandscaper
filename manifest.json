@@ -1,0 +1,25 @@
+{
+  "name": "YourLandscaper",
+  "short_name": "YourLandscaper",
+  "description": "Landscaping calculator, inventory, orders & sales tracker",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0b0d",
+  "theme_color": "#ffd400",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230b0b0d'/%3E%3Ctext x='256' y='200' text-anchor='middle' font-family='system-ui,sans-serif' font-size='72' font-weight='700' fill='%23ffffff'%3EYour%3C/text%3E%3Ctext x='256' y='310' text-anchor='middle' font-family='system-ui,sans-serif' font-size='72' font-weight='700' fill='%233fc34a'%3ELandscaper%3C/text%3E%3Ccircle cx='256' cy='410' r='36' fill='%23f0f0f0' stroke='%23d0d0d0' stroke-width='3'/%3E%3Ccircle cx='244' cy='410' r='9' fill='%23222'/%3E%3Ccircle cx='268' cy='410' r='9' fill='%23222'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%230b0b0d'/%3E%3Ctext x='96' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-size='26' font-weight='700' fill='%23ffffff'%3EYour%3C/text%3E%3Ctext x='96' y='112' text-anchor='middle' font-family='system-ui,sans-serif' font-size='26' font-weight='700' fill='%233fc34a'%3ELandscaper%3C/text%3E%3Ccircle cx='96' cy='152' r='14' fill='%23f0f0f0' stroke='%23d0d0d0' stroke-width='2'/%3E%3Ccircle cx='91' cy='152' r='3.5' fill='%23222'/%3E%3Ccircle cx='101' cy='152' r='3.5' fill='%23222'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,1207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#ffd400"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Mars GPS — Project Mapping</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+  <style>
+/* ── Root (mirrored from main app) ── */
+:root{--bg:#0b0b0d;--card:#111216;--muted:#9aa0a6;--accent:#ffd400;--white:#fff;
+  --bp-cyan:#00e5ff;--bp-cyan-dim:rgba(0,229,255,.35);--bp-grid:rgba(0,229,255,.06);--bp-glow:rgba(0,229,255,.25);--bp-line:rgba(0,229,255,.55)}
+*{box-sizing:border-box;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--white)}
+
+/* ── Map fills screen ── */
+#map{position:absolute;inset:0;width:100%;height:100%}
+
+/* ── Blueprint filter applied to satellite tiles ── */
+#map .mapboxgl-canvas{filter:saturate(.15) brightness(.55) contrast(1.35) sepia(.12) hue-rotate(180deg)}
+
+/* ── Blueprint Grid Overlay (always visible, pointer-through) ── */
+.bp-grid{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:
+    linear-gradient(var(--bp-grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--bp-grid) 1px,transparent 1px);
+  background-size:48px 48px;
+  mix-blend-mode:screen}
+/* Subtle scanlines for CRT/technical feel */
+.bp-scan{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(180deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);
+  mix-blend-mode:multiply}
+/* Corner crosshair reticles */
+.bp-reticle{position:fixed;z-index:2;pointer-events:none;width:40px;height:40px}
+.bp-reticle::before,.bp-reticle::after{content:'';position:absolute;background:var(--bp-cyan);opacity:.3}
+.bp-reticle::before{width:1px;height:100%;left:50%;top:0}
+.bp-reticle::after{height:1px;width:100%;top:50%;left:0}
+.bp-reticle.tl{top:52px;left:0}.bp-reticle.tr{top:52px;right:0}.bp-reticle.bl{bottom:80px;left:0}.bp-reticle.br{bottom:80px;right:0}
+/* Vignette for depth */
+.bp-vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(0,10,20,.5) 100%)}
+
+/* ── Header ── */
+.hdr{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:8px;padding:8px 12px;background:linear-gradient(180deg,rgba(0,10,18,.97),rgba(0,10,18,.88));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(0,229,255,.1)}
+.hdr-back{display:flex;align-items:center;gap:5px;background:none;border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:7px 12px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .12s ease;flex-shrink:0}
+.hdr-back:hover{color:var(--bp-cyan);border-color:rgba(0,229,255,.4)}
+.hdr-title{font-size:14px;font-weight:700;background:linear-gradient(135deg,var(--bp-cyan),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;flex-shrink:0;letter-spacing:1.2px;text-transform:uppercase}
+.hdr-title small{display:block;font-size:9px;letter-spacing:2px;-webkit-text-fill-color:var(--bp-cyan);font-weight:400;text-align:center;opacity:.7}
+
+/* ── Search Bar ── */
+.search-wrap{position:relative;flex:1;max-width:420px}
+.search-input{width:100%;padding:8px 14px 8px 34px;border-radius:10px;border:1px solid rgba(0,229,255,.12);background:rgba(0,15,25,.85);color:var(--bp-cyan);font-size:13px;font-weight:500;outline:none;transition:border .15s;font-family:'Courier New',monospace;letter-spacing:.3px}
+.search-input:focus{border-color:var(--bp-cyan);box-shadow:0 0 12px rgba(0,229,255,.1)}
+.search-input::placeholder{color:rgba(0,229,255,.25)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(0,229,255,.3);pointer-events:none}
+.search-results{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:280px;overflow-y:auto;background:rgba(0,12,20,.95);border:1px solid rgba(0,229,255,.15);border-radius:12px;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 20px rgba(0,229,255,.05)}
+.search-results.open{display:block}
+.sr-cat{padding:6px 14px;font-size:10px;font-weight:700;color:var(--bp-cyan);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(0,229,255,.08);font-family:'Courier New',monospace}
+.sr-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .1s;border-bottom:1px solid rgba(0,229,255,.04)}
+.sr-item:last-child{border-bottom:none}
+.sr-item:hover{background:rgba(0,229,255,.04)}
+.sr-item-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sr-item-icon.addr{background:rgba(0,229,255,.08);color:var(--bp-cyan)}
+.sr-item-icon.node{background:rgba(0,229,255,.08);color:var(--bp-cyan)}
+.sr-item-icon.bldg{background:rgba(0,229,255,.08);color:var(--bp-cyan)}
+.sr-item-text{font-size:12px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Courier New',monospace}
+.sr-item-sub{font-size:10px;color:var(--muted);font-family:'Courier New',monospace}
+
+/* ── Header Right Controls ── */
+.hdr-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hdr-btn{width:34px;height:34px;border-radius:8px;border:1px solid rgba(0,229,255,.12);background:rgba(0,229,255,.03);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;font-size:12px;font-weight:700;font-family:'Courier New',monospace}
+.hdr-btn:hover{border-color:rgba(0,229,255,.3);color:var(--bp-cyan)}
+.hdr-btn.active{border-color:var(--bp-cyan);color:var(--bp-cyan);background:rgba(0,229,255,.08);box-shadow:0 0 8px rgba(0,229,255,.15)}
+.hdr-coords{font-size:10px;color:var(--bp-cyan);font-family:'Courier New',monospace;background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:8px;padding:4px 8px;line-height:1.4;text-align:right;letter-spacing:.5px}
+.hdr-coords .cv{color:var(--bp-cyan);font-weight:700;text-shadow:0 0 6px var(--bp-glow)}
+
+/* ── GPS Indicator ── */
+.gps-bar{position:fixed;top:54px;left:50%;transform:translateX(-50%);z-index:90;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.5px;background:rgba(0,15,25,.9);border:1px solid rgba(0,229,255,.1);display:flex;align-items:center;gap:6px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:'Courier New',monospace}
+.gps-dot{width:8px;height:8px;border-radius:50%;background:#666;transition:background .3s}
+.gps-dot.good{background:var(--bp-cyan);box-shadow:0 0 8px var(--bp-glow)}
+.gps-dot.fair{background:#f39c12;box-shadow:0 0 6px rgba(243,156,18,.4)}
+.gps-dot.poor{background:#ff4444;box-shadow:0 0 6px rgba(255,68,68,.4)}
+
+/* ── Template Bar ── */
+.tmpl-bar{position:fixed;top:54px;left:12px;z-index:90;display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(0,15,25,.9);border:1px solid rgba(0,229,255,.1);border-radius:12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tmpl-sel{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.12);border-radius:8px;color:var(--bp-cyan);padding:5px 8px;font-size:12px;font-weight:600;min-width:100px;cursor:pointer;font-family:'Courier New',monospace}
+.tmpl-sel:focus{outline:none;border-color:var(--bp-cyan)}
+.tmpl-btn{width:28px;height:28px;border-radius:7px;border:1px solid rgba(0,229,255,.1);background:rgba(0,229,255,.03);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.tmpl-btn:hover{border-color:rgba(0,229,255,.3);color:var(--bp-cyan)}
+.tmpl-btn.del:hover{color:#ff4444;border-color:rgba(255,68,68,.3)}
+
+/* ── Info Panel (right) ── */
+.info-panel{position:fixed;top:54px;right:12px;z-index:90;width:190px;padding:10px;background:rgba(0,15,25,.92);border:1px solid rgba(0,229,255,.12);border-radius:12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);max-height:calc(100vh - 130px);overflow-y:auto}
+.info-panel h4{margin:0 0 6px;font-size:11px;color:var(--bp-cyan);font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'Courier New',monospace}
+.info-stat{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid rgba(0,229,255,.06)}
+.info-stat .il{color:var(--muted);font-family:'Courier New',monospace;font-size:10px;letter-spacing:.3px}
+.info-stat .iv{color:var(--bp-cyan);font-weight:600;font-family:'Courier New',monospace;text-shadow:0 0 4px var(--bp-glow)}
+.info-nlist{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.info-ni{display:flex;align-items:center;justify-content:space-between;padding:4px 6px;border-radius:6px;font-size:10px;background:rgba(0,229,255,.03);border:1px solid rgba(0,229,255,.08)}
+.info-ni .nn{color:var(--bp-cyan);font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Courier New',monospace;letter-spacing:.3px}
+.info-ni .nn:hover{text-decoration:underline;text-shadow:0 0 6px var(--bp-glow)}
+.info-ni .nd{background:none;border:none;color:#555;cursor:pointer;font-size:13px;padding:0 2px;transition:color .1s}
+.info-ni .nd:hover{color:#ff4444}
+
+/* ── Toolbar ── */
+.toolbar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:90;display:flex;gap:6px;padding:8px 12px;background:rgba(0,15,25,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(0,229,255,.12);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 24px rgba(0,229,255,.04)}
+.tb{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;border-radius:12px;border:1px solid rgba(0,229,255,.1);background:rgba(0,229,255,.02);color:var(--muted);font-size:9px;font-weight:600;letter-spacing:.5px;cursor:pointer;transition:all .12s;min-width:52px;-webkit-tap-highlight-color:transparent;user-select:none;font-family:'Courier New',monospace;text-transform:uppercase}
+.tb svg{width:18px;height:18px}
+.tb:active{transform:scale(.92)}.tb:hover{border-color:var(--bp-cyan-dim);color:var(--bp-cyan)}
+.tb.active{border-color:var(--bp-cyan);color:var(--bp-cyan);background:rgba(0,229,255,.08);box-shadow:0 0 14px rgba(0,229,255,.2)}
+.tb.danger:hover{color:#ff4444;border-color:rgba(255,68,68,.3)}
+
+/* ── Node Markers (Mapbox HTML Markers) — Blueprint Style ── */
+.node-marker{display:flex;flex-direction:column;align-items:center;cursor:grab}
+.node-marker:active{cursor:grabbing}
+.nm-dot{width:18px;height:18px;border-radius:50%;background:transparent;border:2px solid var(--bp-cyan);box-shadow:0 0 10px var(--bp-glow),inset 0 0 6px rgba(0,229,255,.15);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:var(--bp-cyan);transition:transform .15s;position:relative}
+.nm-dot::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1px solid rgba(0,229,255,.12);animation:nm-ping 2.5s ease-out infinite}
+@keyframes nm-ping{0%{transform:scale(1);opacity:.4}100%{transform:scale(1.8);opacity:0}}
+.nm-dot:hover{transform:scale(1.2);box-shadow:0 0 16px var(--bp-cyan)}
+.nm-dot.sel{background:var(--bp-cyan);color:#000;box-shadow:0 0 18px var(--bp-cyan)}
+.nm-label{margin-top:4px;padding:2px 7px;border-radius:3px;background:rgba(0,20,30,.85);border:1px solid rgba(0,229,255,.2);color:var(--bp-cyan);font-size:9px;font-weight:700;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;pointer-events:none;letter-spacing:.4px;font-family:'Courier New',monospace;text-transform:uppercase}
+
+/* ── Editor Bottom Sheet ── */
+.editor{position:fixed;bottom:0;left:0;right:0;z-index:150;background:rgba(0,12,20,.97);border-top:1px solid rgba(0,229,255,.15);border-radius:18px 18px 0 0;transform:translateY(100%);transition:transform .3s ease;max-height:70vh;overflow-y:auto;padding:0 16px 20px}
+.editor.open{transform:translateY(0)}
+.editor-handle{width:40px;height:4px;border-radius:4px;background:#333;margin:10px auto 8px}
+.editor-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.editor-hdr h3{font-size:15px;font-weight:700;color:var(--bp-cyan);font-family:'Courier New',monospace;letter-spacing:.5px;text-transform:uppercase}
+.editor-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px 8px}
+.editor-close:hover{color:#ff4444}
+.ef{margin-bottom:12px}
+.ef label{display:block;color:var(--muted);font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.ef-input{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(0,229,255,.12);background:rgba(0,229,255,.04);color:var(--bp-cyan);font-size:14px;cursor:pointer;font-family:'Courier New',monospace}
+.ef-input:focus{outline:none;border-color:var(--bp-cyan)}
+.ef-input[readonly]{cursor:pointer}
+.ef-textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid #222;background:#1a1b1f;color:var(--white);font-size:13px;min-height:60px;resize:vertical}
+.ef-textarea:focus{outline:none;border-color:var(--accent)}
+.ef-img-row{display:flex;gap:8px;align-items:center}
+.ef-img-btn{padding:8px 14px;border-radius:8px;border:1px solid #222;background:#1a1b1f;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
+.ef-img-btn:hover{border-color:rgba(255,212,0,.3);color:var(--accent)}
+.ef-img-preview{width:60px;height:60px;border-radius:8px;border:1px solid #222;object-fit:cover;display:none}
+.ef-img-preview.has{display:block}
+input[type=file].hidden-file{display:none}
+.inv-chips{display:flex;flex-wrap:wrap;gap:6px}
+.inv-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;border:1px solid #222;background:transparent;cursor:pointer;transition:all .12s;font-size:12px;color:var(--muted)}
+.inv-chip input{display:none}
+.inv-chip input:checked+span{color:var(--accent);font-weight:700}
+.inv-chip:has(input:checked){border-color:rgba(255,212,0,.3);background:rgba(255,212,0,.06)}
+.editor-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+.ea-btn{padding:10px 20px;border-radius:10px;border:1px solid #222;font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.ea-del{background:rgba(255,68,68,.1);color:#ff4444;border-color:rgba(255,68,68,.25)}
+.ea-del:hover{background:rgba(255,68,68,.2)}
+.ea-save{border-color:var(--accent);background:linear-gradient(180deg,#ffe033,#ffc800);color:#111;font-weight:700}
+.ea-save:hover{box-shadow:0 4px 20px rgba(255,212,0,.3)}
+
+/* ── Modals ── */
+.modal-ov{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.m-box{background:var(--card);border:1px solid #222;border-radius:16px;padding:20px;width:92%;max-width:520px}
+/* QWERTY */
+.qw-title{margin:0 0 12px;font-size:17px;font-weight:700;color:var(--accent)}
+.qw-display{display:flex;align-items:center;padding:12px 16px;margin-bottom:12px;border-radius:12px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222;min-height:48px}
+.qw-val{color:var(--accent);font-size:22px;font-weight:700;letter-spacing:.5px;word-break:break-all}
+.qw-cur{color:var(--accent);font-size:22px;font-weight:300;animation:blink 1s step-end infinite;margin-left:1px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.qw-rows{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.qw-row{display:flex;gap:4px;justify-content:center}
+.qk{min-width:32px;height:40px;border-radius:10px;border:1px solid #222;background:linear-gradient(180deg,#161618,#111216);color:var(--accent);font-size:16px;font-weight:700;cursor:pointer;transition:all .1s;-webkit-tap-highlight-color:transparent;user-select:none;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.qk:active{transform:scale(.92);background:rgba(255,212,0,.12);border-color:rgba(255,212,0,.4)}
+.qk-sh{min-width:48px;color:var(--muted)}.qk-sh.on{color:var(--accent);border-color:rgba(255,212,0,.3);background:rgba(255,212,0,.08)}
+.qk-bk{min-width:48px;color:var(--muted)}.qk-bk:active{color:#ff4444}
+.qk-sp{flex:1;max-width:240px;min-width:100px;font-size:11px;color:var(--muted);letter-spacing:1px}
+.qw-acts{display:flex;gap:10px;justify-content:flex-end}
+.qw-btn{display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;border:1px solid #222;background:#1a1b1f;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.qw-cancel:hover{color:#ff4444;border-color:rgba(255,68,68,.3)}
+.qw-save{border-color:var(--accent);background:linear-gradient(180deg,#ffe033,#ffc800);color:#111;font-weight:700}
+.qw-save:hover{box-shadow:0 4px 20px rgba(255,212,0,.3)}
+.qw-save:active{transform:scale(.96)}
+/* Confirm */
+.cf-box{background:var(--card);border:1px solid #222;border-radius:16px;padding:22px;max-width:360px;width:88%;text-align:center}
+.cf-box h3{color:#ff4444;font-size:18px;margin:0 0 10px}
+.cf-box p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}
+.cf-acts{display:flex;gap:10px;justify-content:center}
+.cf-acts button{padding:10px 22px;border-radius:10px;border:1px solid #222;font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.cf-yes{background:rgba(255,68,68,.15);color:#ff4444;border-color:rgba(255,68,68,.3)}.cf-yes:hover{background:rgba(255,68,68,.25)}
+.cf-no{background:#1a1b1f;color:var(--muted)}.cf-no:hover{color:var(--white)}
+/* Token Setup */
+.tok-box{max-width:440px}
+.tok-box h3{color:var(--accent);font-size:18px;margin:0 0 6px}
+.tok-box p{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 14px}
+.tok-box a{color:var(--accent)}
+.tok-input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #222;background:#1a1b1f;color:var(--white);font-size:14px;margin-bottom:14px}
+.tok-input:focus{outline:none;border-color:var(--accent)}
+.tok-save{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(180deg,#ffe033,#ffc800);color:#111;font-size:15px;font-weight:700;cursor:pointer}
+.tok-save:hover{box-shadow:0 4px 20px rgba(255,212,0,.3)}
+.tok-skip{display:block;text-align:center;margin-top:10px;color:var(--muted);font-size:12px;cursor:pointer;background:none;border:none;width:100%}
+.tok-skip:hover{color:var(--white)}
+
+/* ── Mapbox Overrides ── */
+.mapboxgl-ctrl-attrib{display:none!important}
+.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{bottom:80px!important}
+.mapboxgl-ctrl-group{background:rgba(0,20,30,.85)!important;border:1px solid rgba(0,229,255,.15)!important;border-radius:8px!important}
+.mapboxgl-ctrl-group button{background:transparent!important;border-color:rgba(0,229,255,.1)!important}
+.mapboxgl-ctrl-group button .mapboxgl-ctrl-icon{filter:brightness(0) saturate(100%) invert(85%) sepia(30%) saturate(2000%) hue-rotate(155deg) brightness(100%)}
+.mapboxgl-ctrl-scale{background:rgba(0,20,30,.8)!important;border:1px solid rgba(0,229,255,.25)!important;color:var(--bp-cyan)!important;font-family:'Courier New',monospace!important;font-size:10px!important;letter-spacing:.5px!important;border-radius:4px!important;padding:1px 6px!important}
+.mapboxgl-popup-content{background:rgba(0,20,30,.92)!important;color:var(--bp-cyan)!important;border-radius:8px!important;border:1px solid rgba(0,229,255,.2)!important;padding:8px 12px!important;font-size:12px!important;font-family:'Courier New',monospace!important}
+.mapboxgl-popup-tip{border-top-color:rgba(0,20,30,.92)!important}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .info-panel{display:none}
+  .hdr-coords{display:none}
+  .tmpl-bar{right:12px}
+  .toolbar{bottom:12px;padding:6px 8px;gap:4px}
+  .tb{padding:6px 8px;min-width:44px;font-size:8px}
+  .search-wrap{max-width:180px}
+}
+  </style>
+</head>
+<body>
+
+<!-- ═══ Map Container ═══ -->
+<div id="map"></div>
+<!-- Blueprint Overlays -->
+<div class="bp-grid"></div>
+<div class="bp-scan"></div>
+<div class="bp-vignette"></div>
+<div class="bp-reticle tl"></div>
+<div class="bp-reticle tr"></div>
+<div class="bp-reticle bl"></div>
+<div class="bp-reticle br"></div>
+
+<!-- ═══ Header ═══ -->
+<header class="hdr">
+  <button id="maps-back" class="hdr-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back
+  </button>
+  <div style="text-align:center;flex-shrink:0">
+    <span class="hdr-title">MARS GPS<small>PROJECT MAPPING</small></span>
+  </div>
+  <div class="search-wrap">
+    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="search-input" class="search-input" type="text" placeholder="Search addresses, nodes, buildings…" autocomplete="off"/>
+    <div id="search-results" class="search-results"></div>
+  </div>
+  <div class="hdr-right">
+    <button id="btn-3d" class="hdr-btn" title="Toggle 3D">3D</button>
+    <button id="btn-bldg" class="hdr-btn" title="Toggle Buildings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="22" x2="9" y2="2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+    </button>
+    <div id="hdr-coords" class="hdr-coords">
+      <div>LAT <span class="cv" id="c-lat">—</span></div>
+      <div>LNG <span class="cv" id="c-lng">—</span></div>
+    </div>
+    <button id="btn-token" class="hdr-btn" title="API Settings">⚙</button>
+  </div>
+</header>
+
+<!-- ═══ GPS Indicator ═══ -->
+<div class="gps-bar">
+  <div id="gps-dot" class="gps-dot"></div>
+  <span id="gps-status">GPS: Acquiring…</span>
+</div>
+
+<!-- ═══ Template Bar ═══ -->
+<div class="tmpl-bar">
+  <select id="tmpl-sel" class="tmpl-sel"><option value="__default__">Default Project</option></select>
+  <button id="tmpl-add" class="tmpl-btn" title="New Template">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button id="tmpl-ren" class="tmpl-btn" title="Rename">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </button>
+  <button id="tmpl-del" class="tmpl-btn del" title="Delete">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+  </button>
+</div>
+
+<!-- ═══ Info Panel ═══ -->
+<div class="info-panel" id="info-panel">
+  <h4>Project Stats</h4>
+  <div class="info-stat"><span class="il">Nodes</span><span class="iv" id="st-nodes">0</span></div>
+  <div class="info-stat"><span class="il">Buildings</span><span class="iv" id="st-bldgs">0</span></div>
+  <div class="info-stat"><span class="il">Perimeter</span><span class="iv" id="st-peri">0 ft</span></div>
+  <div class="info-stat"><span class="il">Area</span><span class="iv" id="st-area">—</span></div>
+  <div style="margin-top:8px"><h4>Nodes</h4><div class="info-nlist" id="node-list"></div></div>
+  <div style="margin-top:8px"><h4>Buildings</h4><div class="info-nlist" id="bldg-list"></div></div>
+</div>
+
+<!-- ═══ Toolbar ═══ -->
+<div class="toolbar">
+  <button class="tb" id="tb-drop" title="Drop Node">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    Drop
+  </button>
+  <button class="tb" id="tb-connect" title="Connect">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    Connect
+  </button>
+  <button class="tb" id="tb-close" title="Close Polygon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 18 20 6 20 2 8.5"/></svg>
+    Close
+  </button>
+  <button class="tb" id="tb-center" title="Center GPS">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    Center
+  </button>
+  <button class="tb danger" id="tb-clear" title="Clear All">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    Clear
+  </button>
+</div>
+
+<!-- ═══ Editor Bottom Sheet ═══ -->
+<div class="editor" id="editor">
+  <div class="editor-handle"></div>
+  <div class="editor-hdr">
+    <h3 id="ed-title">Edit</h3>
+    <button class="editor-close" id="ed-close">×</button>
+  </div>
+  <div class="ef">
+    <label>Name</label>
+    <input class="ef-input" id="ed-name" readonly placeholder="Tap to name…"/>
+  </div>
+  <div class="ef">
+    <label>Notes</label>
+    <textarea class="ef-textarea" id="ed-notes" placeholder="Add notes…"></textarea>
+  </div>
+  <div class="ef">
+    <label>Image / Graphic</label>
+    <div class="ef-img-row">
+      <button class="ef-img-btn" id="ed-img-btn">Choose Image</button>
+      <button class="ef-img-btn" id="ed-img-clear" style="display:none">Remove</button>
+      <img class="ef-img-preview" id="ed-img-preview"/>
+    </div>
+    <input type="file" class="hidden-file" id="ed-img-file" accept="image/*"/>
+  </div>
+  <div class="ef">
+    <label>Linked Materials</label>
+    <div class="inv-chips" id="ed-inv"></div>
+  </div>
+  <div class="editor-actions">
+    <button class="ea-btn ea-del" id="ed-delete">Delete</button>
+    <button class="ea-btn ea-save" id="ed-save">Save</button>
+  </div>
+</div>
+
+<!-- ═══ QWERTY Modal ═══ -->
+<div class="modal-ov" id="qw-modal">
+  <div class="m-box">
+    <h3 class="qw-title" id="qw-title">Name</h3>
+    <div class="qw-display"><span class="qw-val" id="qw-text"></span><span class="qw-cur">|</span></div>
+    <div class="qw-rows" id="qw-rows"></div>
+    <div class="qw-acts">
+      <button class="qw-btn qw-cancel" id="qw-cancel">Cancel</button>
+      <button class="qw-btn qw-save" id="qw-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Confirm Modal ═══ -->
+<div class="modal-ov" id="cf-modal">
+  <div class="cf-box">
+    <h3 id="cf-title">Confirm</h3>
+    <p id="cf-msg"></p>
+    <div class="cf-acts">
+      <button class="cf-no" id="cf-no">Cancel</button>
+      <button class="cf-yes" id="cf-yes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Token Setup Modal ═══ -->
+<div class="modal-ov" id="tok-modal">
+  <div class="m-box tok-box">
+    <h3>Mapbox Access Token</h3>
+    <p>Mars GPS uses <a href="https://www.mapbox.com/" target="_blank" rel="noopener">Mapbox</a> for satellite imagery, 3D terrain, and building detection.<br/>Create a free account and paste your <strong>public token</strong> below.</p>
+    <input class="tok-input" id="tok-input" type="text" placeholder="pk.eyJ1Ijo…"/>
+    <button class="tok-save" id="tok-save">Save &amp; Load Map</button>
+    <button class="tok-skip" id="tok-skip">I'll add it later</button>
+  </div>
+</div>
+
+<!-- ═══ Scripts ═══ -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  MARS GPS — Advanced Project Mapping
+//  YourLandscaper PWA
+// ═══════════════════════════════════════════════════════════
+(function(){
+'use strict';
+
+/* ─────────── Constants ─────────── */
+const STORE   = 'yl_mars_gps_v1';
+const TOK_KEY = 'yl_mapbox_token';
+const SAT_STYLE = 'mapbox://styles/mapbox/satellite-streets-v12';
+const DEM_SRC   = 'mapbox://mapbox.mapbox-terrain-dem-v1';
+const DEFAULT_CENTER = [-76.3, 40.04]; // central PA fallback
+const DEFAULT_ZOOM   = 17;
+
+/* ─────────── Storage ─────────── */
+function defStore(){
+  return { active:'__default__', templates:{ '__default__':{ name:'Default Project', center:null, zoom:DEFAULT_ZOOM, nodes:[], paths:[], closed:false, buildings:[] } } };
+}
+function loadStore(){ try{ return JSON.parse(localStorage.getItem(STORE)) || defStore(); }catch(e){ return defStore(); } }
+function saveStore(s){ localStorage.setItem(STORE, JSON.stringify(s)); }
+let S = loadStore();
+// Migrate: ensure buildings array exists
+for(const k of Object.keys(S.templates)){
+  if(!S.templates[k].buildings) S.templates[k].buildings = [];
+}
+
+function T(){ return S.templates[S.active]; }
+
+/* ─────────── DOM Refs ─────────── */
+const $=id=>document.getElementById(id);
+const cLat=$('c-lat'), cLng=$('c-lng'), gpsDot=$('gps-dot'), gpsStat=$('gps-status');
+const tmplSel=$('tmpl-sel');
+const stNodes=$('st-nodes'), stBldgs=$('st-bldgs'), stPeri=$('st-peri'), stArea=$('st-area');
+const nodeListEl=$('node-list'), bldgListEl=$('bldg-list');
+const searchInput=$('search-input'), searchResults=$('search-results');
+const editorEl=$('editor'), edTitle=$('ed-title'), edName=$('ed-name'), edNotes=$('ed-notes');
+const edImgBtn=$('ed-img-btn'), edImgClear=$('ed-img-clear'), edImgPreview=$('ed-img-preview'), edImgFile=$('ed-img-file');
+const edInv=$('ed-inv'), edDelete=$('ed-delete'), edSave=$('ed-save'), edClose=$('ed-close');
+
+/* ─────────── State ─────────── */
+let map = null;
+let currentPos = null;
+let watchId = null;
+let firstFix = false;
+let mode = 'idle'; // idle | drop | connect
+let connectFrom = null;
+let is3D = false;
+let buildingsOn = true;
+let markers = [];      // Mapbox Marker instances for nodes
+let gpsMarkerEl = null;
+let gpsMarker = null;
+let editTarget = null; // { type:'node'|'building', idx }
+
+/* ─────────── Token Flow ─────────── */
+function getToken(){ return localStorage.getItem(TOK_KEY) || ''; }
+
+function showTokenModal(){
+  $('tok-modal').classList.add('open');
+  $('tok-input').value = getToken();
+}
+$('tok-save').onclick = ()=>{
+  const v = $('tok-input').value.trim();
+  if(!v){ alert('Please enter a valid Mapbox token.'); return; }
+  localStorage.setItem(TOK_KEY, v);
+  $('tok-modal').classList.remove('open');
+  if(!map) initMap(v);
+};
+$('tok-skip').onclick = ()=>{ $('tok-modal').classList.remove('open'); };
+$('btn-token').onclick = showTokenModal;
+
+/* ─────────── Map Initialization ─────────── */
+function initMap(token){
+  mapboxgl.accessToken = token;
+  const center = T().center || DEFAULT_CENTER;
+  map = new mapboxgl.Map({
+    container: 'map',
+    style: SAT_STYLE,
+    center: center,
+    zoom: T().zoom || DEFAULT_ZOOM,
+    pitch: 0,
+    bearing: 0,
+    antialias: true
+  });
+
+  map.addControl(new mapboxgl.NavigationControl({ showCompass:true, showZoom:true }), 'top-right');
+  map.addControl(new mapboxgl.ScaleControl({ maxWidth:120, unit:'imperial' }), 'bottom-left');
+
+  map.on('load', ()=>{
+    // Terrain source
+    if(!map.getSource('mapbox-dem')){
+      map.addSource('mapbox-dem',{ type:'raster-dem', url:DEM_SRC, tileSize:512, maxzoom:14 });
+    }
+    setup3DBuildings();
+    setupPathLayer();
+    setupPolygonLayer();
+    setupAnnotatedBuildingsLayer();
+    rebuildAll();
+    startGPS();
+  });
+
+  // Map click handler
+  map.on('click', onMapClick);
+  map.getCanvas().style.cursor = '';
+}
+
+/* ─────────── 3D Buildings Layer ─────────── */
+function setup3DBuildings(){
+  // Insert a 3D buildings layer from composite source
+  const layers = map.getStyle().layers;
+  let labelLayerId;
+  for(const l of layers){
+    if(l.type==='symbol' && l.layout && l.layout['text-field']){ labelLayerId=l.id; break; }
+  }
+  if(!map.getLayer('3d-buildings')){
+    map.addLayer({
+      id:'3d-buildings',
+      source:'composite',
+      'source-layer':'building',
+      filter:['==','extrude','true'],
+      type:'fill-extrusion',
+      minzoom:14,
+      paint:{
+        'fill-extrusion-color':'#003850',
+        'fill-extrusion-height':['interpolate',['linear'],['zoom'],14,0,14.05,['get','height']],
+        'fill-extrusion-base':['interpolate',['linear'],['zoom'],14,0,14.05,['get','min_height']],
+        'fill-extrusion-opacity':0.65
+      }
+    }, labelLayerId);
+  }
+}
+
+function toggleBuildings(){
+  buildingsOn = !buildingsOn;
+  $('btn-bldg').classList.toggle('active', buildingsOn);
+  if(map.getLayer('3d-buildings')){
+    map.setLayoutProperty('3d-buildings','visibility', buildingsOn?'visible':'none');
+  }
+  if(map.getLayer('annotated-bldg-fill')){
+    map.setLayoutProperty('annotated-bldg-fill','visibility', buildingsOn?'visible':'none');
+    map.setLayoutProperty('annotated-bldg-outline','visibility', buildingsOn?'visible':'none');
+    map.setLayoutProperty('annotated-bldg-3d','visibility', buildingsOn?'visible':'none');
+    map.setLayoutProperty('annotated-bldg-label','visibility', buildingsOn?'visible':'none');
+  }
+}
+
+/* ─────────── Path Lines Layer ─────────── */
+function setupPathLayer(){
+  map.addSource('paths-src',{ type:'geojson', data:emptyFC() });
+  map.addLayer({ id:'paths-line', type:'line', source:'paths-src', paint:{ 'line-color':'#00e5ff','line-width':2.5,'line-opacity':0.9,'line-dasharray':[4,2] }});
+  map.addLayer({ id:'paths-glow', type:'line', source:'paths-src', paint:{ 'line-color':'#00e5ff','line-width':8,'line-opacity':0.12,'line-blur':6 }});
+  map.addLayer({ id:'paths-label', type:'symbol', source:'paths-src', layout:{ 'symbol-placement':'line-center','text-field':['get','dist'],'text-size':10,'text-font':['Open Sans Bold','Arial Unicode MS Bold'],'text-allow-overlap':false }, paint:{ 'text-color':'#00e5ff','text-halo-color':'rgba(0,10,20,0.9)','text-halo-width':1.5 }});
+}
+
+/* ─────────── Polygon Fill Layer ─────────── */
+function setupPolygonLayer(){
+  map.addSource('polygon-src',{ type:'geojson', data:emptyFC() });
+  map.addLayer({ id:'polygon-fill', type:'fill', source:'polygon-src', paint:{ 'fill-color':'rgba(0,229,255,0.06)','fill-outline-color':'#00e5ff' }});
+  // Hatching effect via line layer on polygon outline
+  map.addLayer({ id:'polygon-outline', type:'line', source:'polygon-src', paint:{ 'line-color':'#00e5ff','line-width':1.5,'line-dasharray':[6,3],'line-opacity':0.7 }});
+  // Area label
+  map.addSource('area-label-src',{ type:'geojson', data:emptyFC() });
+  map.addLayer({ id:'area-label', type:'symbol', source:'area-label-src', layout:{ 'text-field':['get','area'],'text-size':13,'text-font':['Open Sans Bold','Arial Unicode MS Bold'] }, paint:{ 'text-color':'#00e5ff','text-halo-color':'rgba(0,10,20,0.85)','text-halo-width':1.5 }});
+}
+
+/* ─────────── Annotated Buildings Layers ─────────── */
+function setupAnnotatedBuildingsLayer(){
+  map.addSource('annot-bldg-src',{ type:'geojson', data:emptyFC() });
+  map.addLayer({ id:'annotated-bldg-fill', type:'fill', source:'annot-bldg-src', paint:{ 'fill-color':'rgba(0,229,255,0.1)','fill-outline-color':'#00e5ff' }});
+  map.addLayer({ id:'annotated-bldg-outline', type:'line', source:'annot-bldg-src', paint:{ 'line-color':'#00e5ff','line-width':2,'line-opacity':0.8 }});
+  map.addLayer({ id:'annotated-bldg-3d', type:'fill-extrusion', source:'annot-bldg-src', paint:{ 'fill-extrusion-color':'rgba(0,90,120,0.5)','fill-extrusion-height':['get','height'],'fill-extrusion-base':0,'fill-extrusion-opacity':0.45 }});
+  // Label points
+  map.addSource('annot-bldg-labels-src',{ type:'geojson', data:emptyFC() });
+  map.addLayer({ id:'annotated-bldg-label', type:'symbol', source:'annot-bldg-labels-src', layout:{ 'text-field':['get','name'],'text-size':11,'text-font':['Open Sans Bold','Arial Unicode MS Bold'],'text-offset':[0,-1.5],'text-transform':'uppercase','text-letter-spacing':0.08 }, paint:{ 'text-color':'#00e5ff','text-halo-color':'rgba(0,10,20,0.9)','text-halo-width':1.5 }});
+}
+
+function emptyFC(){ return { type:'FeatureCollection', features:[] }; }
+
+/* ─────────── GPS Tracking ─────────── */
+function startGPS(){
+  if(!navigator.geolocation){ gpsStat.textContent='GPS: Not available'; gpsDot.className='gps-dot poor'; return; }
+  // Pulsing marker element
+  gpsMarkerEl = document.createElement('div');
+  gpsMarkerEl.innerHTML = '<div style="width:16px;height:16px;border-radius:50%;background:transparent;border:2px solid #00e5ff;box-shadow:0 0 12px rgba(0,229,255,.5);position:relative"><div style="position:absolute;inset:3px;border-radius:50%;background:#00e5ff"></div></div><div style="position:absolute;inset:-8px;border-radius:50%;border:1.5px solid rgba(0,229,255,.2);animation:gpsPulse 2s ease-out infinite"></div>';
+  const style = document.createElement('style');
+  style.textContent = '@keyframes gpsPulse{0%{box-shadow:0 0 0 0 rgba(0,229,255,.4)}70%{box-shadow:0 0 0 20px rgba(0,229,255,0)}100%{box-shadow:0 0 0 0 rgba(0,229,255,0)}}';
+  document.head.appendChild(style);
+
+  watchId = navigator.geolocation.watchPosition(pos=>{
+    currentPos = { lat:pos.coords.latitude, lng:pos.coords.longitude, acc:pos.coords.accuracy };
+    cLat.textContent = pos.coords.latitude.toFixed(6);
+    cLng.textContent = pos.coords.longitude.toFixed(6);
+    const a = pos.coords.accuracy;
+    gpsDot.className = 'gps-dot '+(a<=10?'good':a<=30?'fair':'poor');
+    gpsStat.textContent = 'GPS: ±'+a.toFixed(0)+'m';
+    // Update marker
+    if(!gpsMarker){
+      gpsMarker = new mapboxgl.Marker({ element:gpsMarkerEl }).setLngLat([currentPos.lng, currentPos.lat]).addTo(map);
+    } else {
+      gpsMarker.setLngLat([currentPos.lng, currentPos.lat]);
+    }
+    // First fix → fly to location
+    if(!firstFix){
+      firstFix = true;
+      map.flyTo({ center:[currentPos.lng, currentPos.lat], zoom:DEFAULT_ZOOM, duration:1500 });
+    }
+  }, err=>{
+    console.warn('GPS:',err.message);
+    gpsStat.textContent='GPS: '+err.message;
+    gpsDot.className='gps-dot poor';
+  },{ enableHighAccuracy:true, maximumAge:3000, timeout:10000 });
+}
+
+/* ─────────── Map Click Handler ─────────── */
+function onMapClick(e){
+  // 1) If connect mode, check node marker clicks (handled by marker events)
+  // 2) If not drop mode, check building click
+  if(mode !== 'drop'){
+    const feats = map.queryRenderedFeatures(e.point, { layers:['3d-buildings'] });
+    if(feats.length > 0 && buildingsOn){
+      handleBuildingClick(feats[0], e.lngLat);
+      return;
+    }
+    // Also check annotated buildings
+    const aFeats = map.queryRenderedFeatures(e.point, { layers:['annotated-bldg-fill'] });
+    if(aFeats.length > 0){
+      const id = aFeats[0].properties.id;
+      const idx = T().buildings.findIndex(b=>b.id===id);
+      if(idx>=0){ openEditor('building', idx); return; }
+    }
+  }
+  // 3) Drop mode → add node
+  if(mode === 'drop'){
+    addNode(e.lngLat.lat, e.lngLat.lng);
+  }
+}
+
+/* ─────────── Building Click / Annotate ─────────── */
+function handleBuildingClick(feature, lngLat){
+  const geom = feature.geometry;
+  const height = feature.properties.height || feature.properties.render_height || 8;
+  // Check if already annotated (approximate centroid match)
+  const ctr = polygonCentroid(geom);
+  const existing = T().buildings.findIndex(b => haversine(b.center[1],b.center[0],ctr[1],ctr[0]) < 5);
+  if(existing >= 0){
+    openEditor('building', existing);
+    return;
+  }
+  // Create new annotation
+  const b = {
+    id:'b_'+Date.now(),
+    geometry: geom,
+    center: ctr,
+    height: height,
+    name:'',
+    notes:'',
+    image:'',
+    inventory:[]
+  };
+  T().buildings.push(b);
+  persist();
+  openEditor('building', T().buildings.length - 1);
+}
+
+function polygonCentroid(geom){
+  let coords = geom.coordinates[0];
+  if(!coords) return [0,0];
+  let sx=0,sy=0;
+  for(const c of coords){ sx+=c[0]; sy+=c[1]; }
+  return [sx/coords.length, sy/coords.length];
+}
+
+/* ─────────── Node Management ─────────── */
+function addNode(lat, lng){
+  const ns = T().nodes;
+  const idx = ns.length;
+  const n = { id:'n_'+Date.now(), lat, lng, name:'', notes:'', image:'', inventory:[] };
+  ns.push(n);
+  // Auto-connect to previous
+  if(idx > 0) T().paths.push([idx-1, idx]);
+  T().closed = false;
+  persist();
+  // Open QWERTY to name it
+  openQwerty('Name Node #'+(idx+1), '', val=>{ n.name=val; persist(); });
+}
+
+function removeNode(idx){
+  const t = T();
+  t.nodes.splice(idx, 1);
+  t.paths = t.paths.filter(p=>p[0]!==idx && p[1]!==idx).map(p=>[p[0]>idx?p[0]-1:p[0], p[1]>idx?p[1]-1:p[1]]);
+  if(t.nodes.length < 3) t.closed = false;
+  closeEditor();
+  persist();
+}
+
+function removeBuilding(idx){
+  T().buildings.splice(idx, 1);
+  closeEditor();
+  persist();
+}
+
+function handleNodeMarkerClick(idx){
+  if(mode === 'connect'){
+    if(connectFrom === null){ connectFrom = idx; highlightNode(idx); }
+    else {
+      if(connectFrom !== idx){
+        const ps = T().paths;
+        const dup = ps.some(p=>(p[0]===connectFrom&&p[1]===idx)||(p[0]===idx&&p[1]===connectFrom));
+        if(!dup) ps.push([connectFrom, idx]);
+      }
+      connectFrom = null;
+      persist();
+    }
+  } else {
+    openEditor('node', idx);
+  }
+}
+
+function highlightNode(idx){
+  markers.forEach((m,i)=>{
+    const dot = m.getElement().querySelector('.nm-dot');
+    if(dot) dot.classList.toggle('sel', i===idx);
+  });
+}
+
+/* ─────────── Rebuild All Map Objects ─────────── */
+function rebuildAll(){
+  rebuildMarkers();
+  updatePaths();
+  updatePolygon();
+  updateAnnotatedBuildings();
+  updateStats();
+  renderNodeList();
+  renderBldgList();
+}
+
+function rebuildMarkers(){
+  markers.forEach(m=>m.remove());
+  markers = [];
+  const ns = T().nodes;
+  for(let i=0;i<ns.length;i++){
+    const n = ns[i];
+    const el = document.createElement('div');
+    el.className = 'node-marker';
+    el.innerHTML = `<div class="nm-dot">${i+1}</div><div class="nm-label">${n.name||'Node '+(i+1)}</div>`;
+    const mk = new mapboxgl.Marker({ element:el, draggable:true, anchor:'center' })
+      .setLngLat([n.lng, n.lat]).addTo(map);
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); handleNodeMarkerClick(i); });
+    mk.on('dragend', ()=>{
+      const ll = mk.getLngLat();
+      n.lat = ll.lat; n.lng = ll.lng;
+      persist();
+    });
+    markers.push(mk);
+  }
+}
+
+function updatePaths(){
+  if(!map||!map.getSource('paths-src')) return;
+  const t = T(), ns = t.nodes, ps = t.paths;
+  const feats = ps.map(p=>{
+    if(!ns[p[0]]||!ns[p[1]]) return null;
+    const d = haversine(ns[p[0]].lat,ns[p[0]].lng,ns[p[1]].lat,ns[p[1]].lng);
+    return { type:'Feature', properties:{ dist:fmtDist(d) }, geometry:{ type:'LineString', coordinates:[[ns[p[0]].lng,ns[p[0]].lat],[ns[p[1]].lng,ns[p[1]].lat]] }};
+  }).filter(Boolean);
+  map.getSource('paths-src').setData({ type:'FeatureCollection', features:feats });
+}
+
+function updatePolygon(){
+  if(!map||!map.getSource('polygon-src')) return;
+  const t = T(), ns = t.nodes;
+  if(t.closed && ns.length >= 3){
+    const coords = ns.map(n=>[n.lng, n.lat]);
+    coords.push(coords[0]); // close ring
+    map.getSource('polygon-src').setData({ type:'FeatureCollection', features:[{ type:'Feature', properties:{}, geometry:{ type:'Polygon', coordinates:[coords] }}]});
+    // Area label at centroid
+    const cx = ns.reduce((s,n)=>s+n.lng,0)/ns.length;
+    const cy = ns.reduce((s,n)=>s+n.lat,0)/ns.length;
+    const area = polyArea(ns);
+    map.getSource('area-label-src').setData({ type:'FeatureCollection', features:[{ type:'Feature', properties:{ area:area.toFixed(0)+' sq ft' }, geometry:{ type:'Point', coordinates:[cx,cy] }}]});
+  } else {
+    map.getSource('polygon-src').setData(emptyFC());
+    map.getSource('area-label-src').setData(emptyFC());
+  }
+}
+
+function updateAnnotatedBuildings(){
+  if(!map||!map.getSource('annot-bldg-src')) return;
+  const bs = T().buildings;
+  const polyFeats = bs.map(b=>({ type:'Feature', properties:{ id:b.id, height:b.height||8, name:b.name }, geometry:b.geometry }));
+  map.getSource('annot-bldg-src').setData({ type:'FeatureCollection', features:polyFeats });
+  // Label points
+  const labelFeats = bs.filter(b=>b.name).map(b=>({ type:'Feature', properties:{ name:b.name }, geometry:{ type:'Point', coordinates:b.center }}));
+  map.getSource('annot-bldg-labels-src').setData({ type:'FeatureCollection', features:labelFeats });
+}
+
+/* ─────────── Math ─────────── */
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6378137,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmtDist(m){ const ft=m*3.28084; return ft<1000?ft.toFixed(1)+' ft':(ft/5280).toFixed(2)+' mi'; }
+function polyArea(ns){
+  if(ns.length<3) return 0;
+  const R=6378137, o=ns[0];
+  const pts=ns.map(n=>({ x:(n.lng-o.lng)*Math.PI/180*R*Math.cos(o.lat*Math.PI/180), y:(n.lat-o.lat)*Math.PI/180*R }));
+  let a=0;
+  for(let i=0;i<pts.length;i++){ const j=(i+1)%pts.length; a+=pts[i].x*pts[j].y-pts[j].x*pts[i].y; }
+  return Math.abs(a)/2*10.7639;
+}
+function polyPerimeter(ns){
+  if(ns.length<2) return 0;
+  let t=0;
+  for(let i=0;i<ns.length;i++){ const j=(i+1)%ns.length; t+=haversine(ns[i].lat,ns[i].lng,ns[j].lat,ns[j].lng); }
+  return t*3.28084;
+}
+
+/* ─────────── Stats & Lists ─────────── */
+function updateStats(){
+  const t=T(), ns=t.nodes;
+  stNodes.textContent=ns.length;
+  stBldgs.textContent=t.buildings.length;
+  if(t.closed && ns.length>=3){
+    stPeri.textContent=polyPerimeter(ns).toFixed(1)+' ft';
+    stArea.textContent=polyArea(ns).toFixed(0)+' sq ft';
+  } else {
+    let d=0;
+    for(const p of t.paths){ if(ns[p[0]]&&ns[p[1]]) d+=haversine(ns[p[0]].lat,ns[p[0]].lng,ns[p[1]].lat,ns[p[1]].lng); }
+    stPeri.textContent=(d*3.28084).toFixed(1)+' ft';
+    stArea.textContent='—';
+  }
+}
+
+function renderNodeList(){
+  nodeListEl.innerHTML='';
+  T().nodes.forEach((n,i)=>{
+    const d=document.createElement('div');d.className='info-ni';
+    const s=document.createElement('span');s.className='nn';s.textContent=n.name||'Node '+(i+1);
+    s.onclick=()=>{ map.flyTo({center:[n.lng,n.lat],zoom:19,duration:800}); openEditor('node',i); };
+    const b=document.createElement('button');b.className='nd';b.textContent='×';b.onclick=()=>removeNode(i);
+    d.appendChild(s);d.appendChild(b);
+    nodeListEl.appendChild(d);
+  });
+}
+
+function renderBldgList(){
+  bldgListEl.innerHTML='';
+  T().buildings.forEach((b,i)=>{
+    const d=document.createElement('div');d.className='info-ni';
+    const s=document.createElement('span');s.className='nn';s.textContent=b.name||'Building '+(i+1);
+    s.onclick=()=>{ map.flyTo({center:b.center,zoom:19,duration:800}); openEditor('building',i); };
+    const btn=document.createElement('button');btn.className='nd';btn.textContent='×';btn.onclick=()=>removeBuilding(i);
+    d.appendChild(s);d.appendChild(btn);
+    bldgListEl.appendChild(d);
+  });
+}
+
+/* ─────────── Editor Sheet ─────────── */
+function openEditor(type, idx){
+  editTarget = {type, idx};
+  const item = type==='node' ? T().nodes[idx] : T().buildings[idx];
+  if(!item) return;
+  edTitle.textContent = type==='node' ? 'Edit Node #'+(idx+1) : 'Edit Building';
+  edName.value = item.name || '';
+  edNotes.value = item.notes || '';
+  // Image
+  if(item.image){
+    edImgPreview.src = item.image; edImgPreview.classList.add('has'); edImgClear.style.display='';
+  } else {
+    edImgPreview.src=''; edImgPreview.classList.remove('has'); edImgClear.style.display='none';
+  }
+  // Inventory chips
+  buildInvChips(item.inventory || []);
+  editorEl.classList.add('open');
+}
+
+function closeEditor(){
+  editorEl.classList.remove('open');
+  editTarget = null;
+}
+
+edClose.onclick = closeEditor;
+
+edName.onclick = ()=>{
+  if(!editTarget) return;
+  openQwerty('Rename', edName.value, val=>{ edName.value=val; });
+};
+
+edImgBtn.onclick = ()=>edImgFile.click();
+edImgFile.onchange = ()=>{
+  const f = edImgFile.files[0];
+  if(!f) return;
+  resizeImg(f, 400, url=>{
+    edImgPreview.src=url; edImgPreview.classList.add('has'); edImgClear.style.display='';
+  });
+};
+edImgClear.onclick = ()=>{
+  edImgPreview.src=''; edImgPreview.classList.remove('has'); edImgClear.style.display='none'; edImgFile.value='';
+};
+
+edSave.onclick = ()=>{
+  if(!editTarget) return;
+  const item = editTarget.type==='node' ? T().nodes[editTarget.idx] : T().buildings[editTarget.idx];
+  if(!item) return;
+  item.name = edName.value;
+  item.notes = edNotes.value;
+  item.image = edImgPreview.classList.contains('has') ? edImgPreview.src : '';
+  // Gather inventory
+  item.inventory = [];
+  edInv.querySelectorAll('input:checked').forEach(cb=>item.inventory.push(cb.value));
+  closeEditor();
+  persist();
+};
+
+edDelete.onclick = ()=>{
+  if(!editTarget) return;
+  openConfirm('Delete?','Remove this '+editTarget.type+'?', ()=>{
+    if(editTarget.type==='node') removeNode(editTarget.idx);
+    else removeBuilding(editTarget.idx);
+  });
+};
+
+function buildInvChips(selected){
+  edInv.innerHTML='';
+  const items = getInventoryItems();
+  if(items.length===0){ edInv.innerHTML='<span style="color:var(--muted);font-size:12px">No materials in inventory</span>'; return; }
+  items.forEach(name=>{
+    const lbl=document.createElement('label');lbl.className='inv-chip';
+    const cb=document.createElement('input');cb.type='checkbox';cb.value=name;
+    if(selected.includes(name)) cb.checked=true;
+    const sp=document.createElement('span');sp.textContent=name;
+    lbl.appendChild(cb);lbl.appendChild(sp);
+    edInv.appendChild(lbl);
+  });
+}
+
+function getInventoryItems(){
+  const items=[];
+  try{
+    const inv=JSON.parse(localStorage.getItem('yl_inventory_v2')||'[]');
+    if(Array.isArray(inv)) inv.forEach(i=>{ const n=i.name||i.material||i.label; if(n&&!items.includes(n)) items.push(n); });
+  }catch(e){}
+  try{
+    const added=JSON.parse(localStorage.getItem('yl_added_materials_v1')||'[]');
+    if(Array.isArray(added)) added.forEach(i=>{ const n=typeof i==='string'?i:(i.name||i.material); if(n&&!items.includes(n)) items.push(n); });
+  }catch(e){}
+  return items;
+}
+
+function resizeImg(file, max, cb){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      let w=img.width,h=img.height;
+      if(w>max||h>max){ if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+      c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+      cb(c.toDataURL('image/jpeg',0.7));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ─────────── Search ─────────── */
+let searchDebounce = null;
+searchInput.addEventListener('input', ()=>{
+  clearTimeout(searchDebounce);
+  const q = searchInput.value.trim();
+  if(!q){ searchResults.classList.remove('open'); searchResults.innerHTML=''; return; }
+  searchDebounce = setTimeout(()=>runSearch(q), 300);
+});
+searchInput.addEventListener('focus', ()=>{ if(searchInput.value.trim()) runSearch(searchInput.value.trim()); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.search-wrap')) searchResults.classList.remove('open'); });
+
+async function runSearch(q){
+  const html = [];
+  // Local search
+  const local = searchLocal(q);
+  if(local.length){
+    html.push('<div class="sr-cat">Your Items</div>');
+    local.forEach(r=>{
+      const icon = r.type==='node'?'node':'bldg';
+      const emoji = r.type==='node'?'📌':'🏢';
+      html.push(`<div class="sr-item" data-action="local" data-tkey="${r.tkey}" data-type="${r.type}" data-idx="${r.idx}"><div class="sr-item-icon ${icon}">${emoji}</div><div><div class="sr-item-text">${esc(r.name)}</div><div class="sr-item-sub">${r.type} · ${r.tmplName}</div></div></div>`);
+    });
+  }
+  // Geocode search
+  const token = getToken();
+  if(token){
+    try{
+      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&limit=5`);
+      const data = await res.json();
+      if(data.features && data.features.length){
+        html.push('<div class="sr-cat">Addresses</div>');
+        data.features.forEach(f=>{
+          html.push(`<div class="sr-item" data-action="geo" data-lng="${f.center[0]}" data-lat="${f.center[1]}"><div class="sr-item-icon addr">📍</div><div><div class="sr-item-text">${esc(f.place_name)}</div></div></div>`);
+        });
+      }
+    }catch(e){ console.warn('Geocode error:',e); }
+  }
+  if(!html.length) html.push('<div class="sr-item"><div class="sr-item-text" style="color:var(--muted)">No results</div></div>');
+  searchResults.innerHTML = html.join('');
+  searchResults.classList.add('open');
+  // Bind clicks
+  searchResults.querySelectorAll('.sr-item[data-action]').forEach(el=>{
+    el.onclick = ()=>{
+      const action = el.dataset.action;
+      if(action==='geo'){
+        const lng=parseFloat(el.dataset.lng), lat=parseFloat(el.dataset.lat);
+        map.flyTo({ center:[lng,lat], zoom:18, duration:1200 });
+      } else if(action==='local'){
+        const tkey=el.dataset.tkey, type=el.dataset.type, idx=parseInt(el.dataset.idx);
+        if(S.active!==tkey){ S.active=tkey; populateTemplates(); rebuildAll(); }
+        const item = type==='node' ? T().nodes[idx] : T().buildings[idx];
+        if(item){
+          const c = type==='node' ? [item.lng, item.lat] : item.center;
+          map.flyTo({ center:c, zoom:19, duration:800 });
+          setTimeout(()=>openEditor(type, idx), 900);
+        }
+      }
+      searchResults.classList.remove('open');
+      searchInput.value='';
+    };
+  });
+}
+
+function searchLocal(q){
+  const ql=q.toLowerCase(), results=[];
+  for(const [key, tmpl] of Object.entries(S.templates)){
+    tmpl.nodes.forEach((n,i)=>{ if(n.name && n.name.toLowerCase().includes(ql)) results.push({type:'node',tkey:key,idx:i,name:n.name,tmplName:tmpl.name}); });
+    tmpl.buildings.forEach((b,i)=>{ if(b.name && b.name.toLowerCase().includes(ql)) results.push({type:'building',tkey:key,idx:i,name:b.name,tmplName:tmpl.name}); });
+  }
+  return results;
+}
+
+function esc(s){ const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+
+/* ─────────── Template Management ─────────── */
+function populateTemplates(){
+  tmplSel.innerHTML='';
+  for(const [k,t] of Object.entries(S.templates)){
+    const o=document.createElement('option');o.value=k;o.textContent=t.name;
+    if(k===S.active) o.selected=true;
+    tmplSel.appendChild(o);
+  }
+}
+
+tmplSel.onchange = ()=>{
+  S.active=tmplSel.value;
+  closeEditor();
+  rebuildAll();
+  // Center on template if it has a center
+  if(T().center) map.flyTo({center:T().center, zoom:T().zoom||DEFAULT_ZOOM, duration:800});
+  persist();
+};
+
+$('tmpl-add').onclick = ()=>{
+  openQwerty('New Template Name','', name=>{
+    if(!name.trim()) return;
+    const key='t_'+Date.now();
+    S.templates[key]={ name:name.trim(), center:map?[map.getCenter().lng,map.getCenter().lat]:null, zoom:map?map.getZoom():DEFAULT_ZOOM, nodes:[], paths:[], closed:false, buildings:[] };
+    S.active=key;
+    populateTemplates();
+    rebuildAll();
+    persist();
+  });
+};
+
+$('tmpl-ren').onclick = ()=>{
+  openQwerty('Rename Template', T().name, name=>{
+    if(!name.trim()) return;
+    T().name=name.trim();
+    populateTemplates();
+    persist();
+  });
+};
+
+$('tmpl-del').onclick = ()=>{
+  if(Object.keys(S.templates).length<=1){ alert('Cannot delete the only template.'); return; }
+  openConfirm('Delete Template?','Delete "'+T().name+'"?', ()=>{
+    delete S.templates[S.active];
+    S.active=Object.keys(S.templates)[0];
+    populateTemplates();
+    rebuildAll();
+    persist();
+  });
+};
+
+/* ─────────── Toolbar Handlers ─────────── */
+function setMode(m){
+  mode=m; connectFrom=null;
+  $('tb-drop').classList.toggle('active',m==='drop');
+  $('tb-connect').classList.toggle('active',m==='connect');
+  if(map) map.getCanvas().style.cursor = m==='drop'?'crosshair':m==='connect'?'pointer':'';
+}
+
+$('tb-drop').onclick = ()=>setMode(mode==='drop'?'idle':'drop');
+$('tb-connect').onclick = ()=>setMode(mode==='connect'?'idle':'connect');
+
+$('tb-close').onclick = ()=>{
+  const t=T(), ns=t.nodes;
+  if(ns.length<3){ alert('Need at least 3 nodes to close polygon.'); return; }
+  t.closed=!t.closed;
+  if(t.closed){
+    const last=ns.length-1;
+    if(!t.paths.some(p=>(p[0]===0&&p[1]===last)||(p[0]===last&&p[1]===0))) t.paths.push([last,0]);
+  }
+  $('tb-close').classList.toggle('active', t.closed);
+  persist();
+};
+
+$('tb-center').onclick = ()=>{
+  if(currentPos) map.flyTo({center:[currentPos.lng,currentPos.lat],zoom:DEFAULT_ZOOM,duration:800});
+  else alert('Waiting for GPS fix…');
+};
+
+$('tb-clear').onclick = ()=>openConfirm('Clear All?','Remove all nodes, paths, and building annotations from this template?', ()=>{
+  T().nodes=[];T().paths=[];T().closed=false;T().buildings=[];
+  closeEditor();
+  persist();
+});
+
+$('btn-bldg').onclick = toggleBuildings;
+
+/* ─────────── 2D / 3D Toggle ─────────── */
+$('btn-3d').onclick = ()=>{
+  is3D=!is3D;
+  $('btn-3d').classList.toggle('active',is3D);
+  if(is3D){
+    map.easeTo({pitch:60, bearing:-17.6, duration:800});
+    if(!map.getTerrain()) map.setTerrain({source:'mapbox-dem',exaggeration:1.5});
+  } else {
+    map.easeTo({pitch:0, bearing:0, duration:800});
+    map.setTerrain(null);
+  }
+};
+
+/* ─────────── QWERTY Keyboard ─────────── */
+const qwModal=$('qw-modal'), qwTitle=$('qw-title'), qwText=$('qw-text'), qwRowsEl=$('qw-rows');
+let qwVal='', qwCb=null, qwShift=true;
+const QW=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['shift','Z','X','C','V','B','N','M','back'],['space']];
+
+function buildQw(){
+  qwRowsEl.innerHTML='';
+  for(const row of QW){
+    const r=document.createElement('div');r.className='qw-row';
+    for(const k of row){
+      const b=document.createElement('button');b.type='button';
+      if(k==='shift'){ b.className='qk qk-sh'+(qwShift?' on':''); b.textContent='⇧'; b.onclick=()=>{qwShift=!qwShift;buildQw();}; }
+      else if(k==='back'){ b.className='qk qk-bk'; b.textContent='⌫'; b.onclick=()=>{qwVal=qwVal.slice(0,-1);qwText.textContent=qwVal;}; }
+      else if(k==='space'){ b.className='qk qk-sp'; b.textContent='SPACE'; b.onclick=()=>{qwVal+=' ';qwText.textContent=qwVal;}; }
+      else { b.className='qk'; const ch=qwShift?k:k.toLowerCase(); b.textContent=ch; b.onclick=()=>{qwVal+=ch;qwText.textContent=qwVal;if(qwShift){qwShift=false;buildQw();}}; }
+      r.appendChild(b);
+    }
+    qwRowsEl.appendChild(r);
+  }
+}
+
+function openQwerty(title,initial,cb){
+  qwTitle.textContent=title; qwVal=initial||''; qwText.textContent=qwVal; qwCb=cb; qwShift=true;
+  buildQw(); qwModal.classList.add('open');
+}
+function closeQwerty(){ qwModal.classList.remove('open'); qwCb=null; }
+
+$('qw-save').onclick = ()=>{ if(qwCb) qwCb(qwVal); closeQwerty(); };
+$('qw-cancel').onclick = closeQwerty;
+qwModal.addEventListener('click', e=>{ if(e.target===qwModal) closeQwerty(); });
+
+/* ─────────── Confirm Modal ─────────── */
+let cfCb=null;
+function openConfirm(title,msg,cb){
+  $('cf-title').textContent=title; $('cf-msg').textContent=msg; cfCb=cb;
+  $('cf-modal').classList.add('open');
+}
+$('cf-yes').onclick=()=>{ if(cfCb)cfCb(); $('cf-modal').classList.remove('open'); cfCb=null; };
+$('cf-no').onclick=()=>{ $('cf-modal').classList.remove('open'); cfCb=null; };
+$('cf-modal').addEventListener('click',e=>{ if(e.target===$('cf-modal')){$('cf-modal').classList.remove('open');cfCb=null;}});
+
+/* ─────────── Persist & Sync ─────────── */
+function persist(){
+  // Save map center/zoom
+  if(map){
+    const c=map.getCenter();
+    T().center=[c.lng,c.lat];
+    T().zoom=map.getZoom();
+  }
+  saveStore(S);
+  rebuildAll();
+}
+
+/* ─────────── Navigation ─────────── */
+$('maps-back').onclick = ()=>{
+  if(watchId!==null) navigator.geolocation.clearWatch(watchId);
+  window.location.href='index.html';
+};
+
+/* ─────────── Init ─────────── */
+function boot(){
+  populateTemplates();
+  $('btn-bldg').classList.add('active');
+  const token = getToken();
+  if(!token){
+    showTokenModal();
+  } else {
+    initMap(token);
+  }
+}
+
+boot();
+
+})();
+</script>
+</body>
+</html>

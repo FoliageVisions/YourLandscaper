@@ -1,0 +1,729 @@
+:root{
+  --bg:#0b0b0d; --card:#111216; --muted:#9aa0a6; --accent:#ffd400; --white:#ffffff;
+}
+*{box-sizing:border-box;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+body{margin:0;background:var(--bg);color:var(--white);min-height:100vh}
+.app{max-width:980px;margin:18px auto;padding:12px}
+header{display:flex;align-items:center;justify-content:space-between}
+header h1{margin:0 0 12px;font-size:20px}
+.title-your{color:var(--white)}
+.title-landscaper{color:#3fc34a}
+.card{background:var(--card);padding:12px;border-radius:8px;margin-bottom:12px}
+.top-row{display:flex;gap:12px}
+.top-row .card{flex:1}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+input[type=number],select,input[type=text]{width:100%;padding:8px;border-radius:6px;border:1px solid #222;background:transparent;color:var(--white)}
+.depth-row{display:flex;gap:8px}
+.material-selection{display:flex;justify-content:space-between;align-items:center}
+.favorites{display:flex;gap:8px;flex-wrap:wrap}
+.fav-item{padding:10px;border-radius:8px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222;cursor:pointer;width:140px}
+.fav-item h4{margin:0 0 6px;font-size:14px}
+.fav-item .prices{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+.fav-item .prices span{display:flex;justify-content:space-between}
+.fav-item .edit{margin-top:8px;font-size:12px;padding:6px;border-radius:6px;background:#161618}
+.fav-item.sel{border:1px solid var(--accent);box-shadow:0 4px 14px rgba(255,212,0,0.06);background:linear-gradient(180deg,rgba(255,212,0,0.02),rgba(255,212,0,0.01));transform:translateY(-2px)}
+.scoops{display:flex;gap:8px}
+.scoops .scoop-btn{position:relative;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:transparent;border:1px solid #222;cursor:pointer;color:var(--muted);transition:all .15s ease}
+.scoops .scoop-btn input{position:absolute;opacity:0;width:0;height:0}
+.scoops .scoop-btn span{display:inline-block;padding:2px 4px}
+.scoops .scoop-btn input:checked + span{color:var(--accent);background:rgba(255,212,0,0.06);border-radius:6px;padding:4px 8px;font-weight:700;border:1px solid rgba(255,212,0,0.12)}
+.scoops .scoop-btn input:checked{outline:none}
+.scoops .scoop-btn:hover{border-color:rgba(255,212,0,0.06);transform:translateY(-1px)}
+.costs .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+
+/* Back button in inventory modal — styled like scoop buttons */
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,212,0,0.08);border:1px solid rgba(255,212,0,0.18);cursor:pointer;color:var(--accent);transition:all .12s ease;margin-left:6px;font-weight:700}
+.back-btn:hover{background:rgba(255,212,0,0.12);border-color:rgba(255,212,0,0.28);transform:translateY(-1px)}
+.back-btn:active{transform:translateY(0)}
+.back-btn:focus{outline:2px solid rgba(255,212,0,0.16)}
+.summary{display:flex;justify-content:space-between;align-items:center}
+.result{color:var(--accent);font-weight:700}
+.yellow{color:var(--accent)}
+.price{color:var(--accent);font-weight:700}
+.fav-item .prices strong.price{color:var(--accent)}
+.fav-item .prices strong{color:var(--muted)}
+.fav-item .prices strong:first-child{color:var(--muted)}
+.fav-item .prices .active-price{outline:2px solid rgba(255,212,0,0.12);padding:2px;border-radius:4px}
+.ditem .price{color:var(--accent);font-weight:700}
+.order-list .price{color:var(--accent);font-weight:700}
+.inv-list .inv-item{padding:8px;border-bottom:1px dashed #1a1a1a}
+.inv-list .inv-item .price{color:var(--accent);font-weight:700}
+.orders .orders-header{display:flex;gap:8px}
+#search{width:100%;box-sizing:border-box;padding:10px 12px 10px 36px;border-radius:10px;border:1px solid #222;background:linear-gradient(180deg,#0f1113,#0b0b0d);color:var(--white);margin-top:6px;margin-bottom:4px;font-size:14px;transition:box-shadow .12s ease,border-color .12s ease,transform .08s ease;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%239aa0a6' stroke-width='2' fill='none'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65' stroke='%239aa0a6' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center}
+#search:focus{border-color:rgba(255,212,0,0.9);box-shadow:0 8px 22px rgba(255,212,0,0.06);outline:none;transform:translateY(-1px)}
+.order-list{list-style:none;padding:0;margin:8px 0 0}
+.order-list li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #1a1a1a}
+.results .big{font-size:18px;margin-top:8px;color:var(--accent)}
+.hidden-ui{display:none !important}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6)}
+.modal .modal-content{width:760px}
+.modal-bar{display:flex;gap:8px;margin-bottom:6px}
+.modal-bar .scoop-btn{padding:8px 10px;border-radius:8px}
+.modal .import-panel textarea{width:100%;min-height:120px}
+.bulk-row input{width:100%;box-sizing:border-box}
+.bulk-row input:focus{border-color:rgba(255,212,0,0.9);outline:none}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+button{background:#1e1f23;color:var(--white);border:1px solid #292a2f;padding:8px 10px;border-radius:6px;cursor:pointer}
+footer{margin-top:8px;color:var(--muted);font-size:12px}
+.delivery{display:flex;gap:8px;flex-wrap:wrap}
+.delivery-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ditem{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222;cursor:pointer;color:var(--muted);transition:all .15s ease;position:relative}
+.ditem:hover{border-color:rgba(255,212,0,0.2);transform:translateY(-1px)}
+.ditem-active{border-color:var(--accent);color:var(--accent);box-shadow:0 4px 14px rgba(255,212,0,0.08)}
+.ditem-active .del-icon{color:var(--accent)}
+.ditem-active .del-label{color:var(--accent)}
+.del-icon{color:var(--muted);transition:color .15s ease;flex-shrink:0}
+.del-label{font-size:13px;white-space:nowrap}
+.del-add-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222;color:var(--muted);font-size:18px;cursor:pointer;transition:all .15s ease;flex-shrink:0}
+.del-add-icon:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.card h3{margin:0 0 8px}
+
+/* Edit button & dropdown menu */
+.edit-wrapper{position:relative}
+.edit-icon-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222;color:var(--muted);cursor:pointer;transition:all .15s ease;font-size:13px}
+.edit-icon-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.edit-menu{position:absolute;right:0;top:calc(100% + 6px);flex-direction:column;gap:4px;padding:8px;border-radius:10px;background:#111216;border:1px solid #222;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:100;min-width:200px}
+.edit-menu-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all .12s ease;font-size:13px;width:100%;text-align:left}
+.edit-menu-item:hover{background:rgba(255,212,0,0.06);color:var(--accent)}
+.edit-menu-item:hover svg{stroke:var(--accent)}
+
+/* Delivery row in edit delivery modal */
+.del-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px dashed #1a1a1a;font-size:14px;gap:8px}
+.del-row-label{display:flex;align-items:center;gap:6px;flex:1}
+.del-row button{background:#1e1f23;border:1px solid #292a2f;color:var(--muted);cursor:pointer;border-radius:6px;padding:4px 8px;font-size:12px}
+.del-row-rm:hover{color:#ff4444;border-color:#ff4444}
+
+/* Inventory modal search — match main search style */
+#inv-search{padding:10px 12px;border-radius:10px;border:1px solid #222;background:linear-gradient(180deg,#0f1113,#0b0b0d);color:var(--white);min-width:220px;transition:box-shadow .12s ease,border-color .12s ease,transform .08s ease;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%239aa0a6' stroke-width='2' fill='none'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65' stroke='%239aa0a6' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center}
+#inv-search:focus{border-color:rgba(255,212,0,0.9);box-shadow:0 8px 22px rgba(255,212,0,0.06);outline:none;transform:translateY(-1px)}
+
+.inv-list .inv-item{padding:10px;border-bottom:1px dashed #1a1a1a;display:flex;flex-direction:row;justify-content:space-between;align-items:flex-start}
+.inv-list .inv-item .inv-title{font-size:15px;font-weight:700;color:var(--white);flex:1}
+.inv-list .inv-item .inv-prices{min-width:260px;text-align:right;color:var(--muted)}
+.inv-list .inv-item .inv-prices .price{color:var(--accent);font-weight:700}
+
+.form-grid.simple{grid-template-columns:1fr}
+.price-row{display:flex;gap:8px;margin-top:6px}
+.price-row input{flex:1}
+
+/* Scoop Size / Coverage table */
+.scov-table{width:100%;border-radius:8px;overflow:hidden;border:1px solid #222}
+.scov-header,.scov-row{display:grid;grid-template-columns:100px 1fr 1fr 1fr 1fr;gap:0}
+.scov-header{background:#1a1b1f;font-weight:700;font-size:12px;color:var(--accent)}
+.scov-header .scov-cell{padding:10px 8px;border-right:1px solid #222}
+.scov-header .scov-cell:last-child{border-right:none}
+.scov-row{border-top:1px solid #222}
+.scov-row .scov-cell{padding:6px 8px;border-right:1px solid #222;display:flex;align-items:center}
+.scov-row .scov-cell:last-child{border-right:none}
+.scov-label-col{font-weight:700;font-size:13px;color:var(--white);background:rgba(255,212,0,0.04)}
+.scov-row input{width:100%;padding:6px 8px;border-radius:6px;border:1px solid #222;background:transparent;color:var(--white);font-size:13px}
+.scov-row input:focus{border-color:rgba(255,212,0,0.9);outline:none}
+#open-scoop-cov{background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222;color:var(--muted);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .15s ease}
+#open-scoop-cov:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+
+/* Add Material picker modal */
+.add-mat-list{max-height:360px;overflow:auto;border:1px solid #222;border-radius:10px;background:#0a0a0c}
+.add-mat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1a1a1a;transition:background .15s ease}
+.add-mat-item:last-child{border-bottom:none}
+.add-mat-item:hover{background:rgba(255,255,255,0.02)}
+.add-mat-item.added{background:rgba(255,212,0,0.04)}
+.add-mat-info{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.add-mat-info strong{color:var(--white);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add-mat-prices{color:var(--muted);font-size:12px}
+.add-mat-toggle{padding:6px 14px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .15s ease}
+.add-mat-toggle:hover{background:rgba(255,212,0,0.1)}
+.add-mat-toggle.remove{border-color:#666;color:#999}
+.add-mat-toggle.remove:hover{border-color:#ff4444;color:#ff4444;background:rgba(255,68,68,0.08)}
+
+/* Clear inventory confirmation modal */
+.clear-inv-modal-content{max-width:460px}
+.clear-inv-message{margin:4px 0 12px;color:var(--muted);font-size:14px;line-height:1.45}
+.clear-inv-action{min-width:88px;padding:9px 14px;border-radius:10px;border:1px solid rgba(255,212,0,0.3);background:linear-gradient(180deg,#ffe033,#ffc800);color:#111;font-weight:700;letter-spacing:0.2px;box-shadow:0 4px 16px rgba(255,212,0,0.22);transition:all .12s ease}
+.clear-inv-action:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,212,0,0.3)}
+.clear-inv-action:active{transform:translateY(0)}
+
+/* Admin configuration panel */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.admin-card{border:1px solid #222;border-radius:10px;padding:10px;background:linear-gradient(180deg,#0f1113,#0b0b0d)}
+.admin-card h4{margin:0 0 8px;font-size:14px;color:var(--accent)}
+.admin-wide{grid-column:1 / -1}
+.admin-list{max-height:180px;overflow:auto;border:1px dashed #1f1f1f;border-radius:8px;padding:8px;margin-top:8px}
+.admin-list-row{display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px dashed #1a1a1a;font-size:13px}
+.admin-list-row:last-child{border-bottom:none}
+.admin-form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+
+@media (max-width:900px){
+  .admin-grid{grid-template-columns:1fr}
+  .admin-form-grid{grid-template-columns:1fr 1fr}
+}
+
+@media (max-width:640px){
+  .admin-form-grid{grid-template-columns:1fr}
+}
+
+/* Number Pad */
+.numpad-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:center}
+.numpad-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.numpad{position:relative;width:100%;max-width:380px;background:#111216;border-radius:20px 20px 0 0;padding:16px 16px 24px;box-shadow:0 -8px 40px rgba(0,0,0,0.5);animation:numpad-slide-up .25s ease}
+@keyframes numpad-slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.numpad-display{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-bottom:12px;border-radius:12px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222}
+.numpad-label{color:var(--muted);font-size:14px;font-weight:600}
+.numpad-value{color:var(--accent);font-size:28px;font-weight:700;letter-spacing:1px}
+.numpad-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.numpad-key{padding:18px 0;border-radius:12px;border:1px solid #222;background:linear-gradient(180deg,#161618,#111216);color:var(--accent);font-size:22px;font-weight:700;cursor:pointer;transition:all .1s ease;-webkit-tap-highlight-color:transparent;user-select:none;text-align:center;display:flex;align-items:center;justify-content:center}
+.numpad-key:active{transform:scale(0.95);background:rgba(255,212,0,0.08);border-color:rgba(255,212,0,0.3)}
+.numpad-key:hover{border-color:rgba(255,212,0,0.2)}
+.numpad-back{display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.numpad-back:active{color:var(--accent)}
+.numpad-spacer{visibility:hidden;pointer-events:none}
+/* Numpad mode: show correct bottom row per field type */
+/* By default hide sqft and depth rows; only qty row shows */
+.np-sqft{display:none !important}
+.np-depth{display:none !important}
+/* SqFt mode: show np-sqft row (delete icon, 0, backspace — no period) */
+.numpad-sqft .np-qty{display:none !important}
+.numpad-sqft .np-sqft{display:flex !important}
+/* Depth mode: show np-depth row (ft, 0, in — no commas/periods) */
+.numpad-depth .np-qty{display:none !important}
+.numpad-depth .np-depth{display:flex !important}
+/* Depth unit buttons styled */
+.np-depth-unit{font-size:15px !important;font-weight:700 !important;color:var(--muted) !important;letter-spacing:0.5px}
+.numpad-actions{display:flex;gap:8px}
+.numpad-back-action{flex:0.6;padding:14px 0;border-radius:12px;border:1px solid #333;background:#1a1b1f;color:var(--muted);font-size:15px;cursor:pointer;transition:all .12s ease;display:flex;align-items:center;justify-content:center}
+.numpad-back-action:hover{border-color:#555;color:var(--white)}
+.numpad-back-action:active{color:var(--accent)}
+.numpad-clear{flex:1;padding:14px 0;border-radius:12px;border:1px solid #333;background:#1a1b1f;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;transition:all .12s ease}
+.numpad-clear:hover{border-color:#555;color:var(--white)}
+.numpad-done{flex:2;padding:14px 0;border-radius:12px;border:1px solid var(--accent);background:rgba(255,212,0,0.1);color:var(--accent);font-size:15px;font-weight:700;cursor:pointer;transition:all .12s ease}
+.numpad-done:hover{background:rgba(255,212,0,0.18)}
+
+/* Floating face menu — bottom right */
+.face-menu-wrap{position:fixed;bottom:20px;right:20px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.face-btn{background:none;border:none;cursor:pointer;padding:0;transition:transform .2s ease;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))}
+.face-btn:hover{transform:scale(1.12)}
+.face-btn:active{transform:scale(0.95)}
+.face-btn.face-open{transform:rotate(180deg) scale(1.1)}
+.face-menu-options{display:flex;flex-direction:column;align-items:flex-end;gap:8px;animation:face-opts-in .2s ease}
+@keyframes face-opts-in{from{opacity:0;transform:translateY(10px) scale(0.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+.face-opt{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;border:1px solid #222;background:linear-gradient(180deg,#161618,#111216);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .12s ease;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+.face-opt:hover{transform:translateX(-4px);background:rgba(255,212,0,0.08);border-color:rgba(255,212,0,0.3)}
+.face-opt:active{transform:scale(0.96)}
+.face-opt svg{stroke:var(--accent);flex-shrink:0}
+.face-opt-mow{color:#00c853!important;border-color:rgba(0,200,83,.2)!important}
+.face-opt-mow:hover{background:rgba(0,200,83,.08)!important;border-color:rgba(0,200,83,.4)!important}
+.face-opt-mow svg{stroke:#00c853!important}
+
+/* Your Contractor page */
+.contractor-page{position:fixed;inset:0;z-index:2000;background:#ffffff;color:#111;display:flex;flex-direction:column;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;animation:contractor-fade-in .25s ease}
+@keyframes contractor-fade-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.contractor-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e5e5e5;background:#fafafa}
+.contractor-back-btn{background:none;border:none;cursor:pointer;padding:8px;border-radius:10px;color:#111;transition:background .12s ease}
+.contractor-back-btn:hover{background:rgba(0,0,0,0.06)}
+.contractor-title{margin:0;font-size:18px;font-weight:700}
+.ct-your{color:#111}
+.ct-contractor{color:#3fc34a}
+.contractor-main{flex:1;overflow:auto;padding:24px 16px}
+.contractor-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:#3fc34a;font-size:14px}
+.contractor-empty p{margin:0}
+.contractor-main-btns{display:flex;gap:12px;margin-top:8px}
+.contractor-main-btns .ca-btn{min-width:120px;padding:14px 20px}
+
+/* FAB + action bar */
+.contractor-fab-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2100;display:flex;flex-direction:column;align-items:center;gap:12px}
+.contractor-fab{width:56px;height:56px;border-radius:50%;background:#2979ff;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(41,121,255,0.4);display:flex;align-items:center;justify-content:center;transition:all .2s ease}
+.contractor-fab:hover{transform:scale(1.08);box-shadow:0 6px 22px rgba(41,121,255,0.5)}
+.contractor-fab:active{transform:scale(0.95)}
+.contractor-fab.open{background:#555;box-shadow:0 4px 16px rgba(0,0,0,0.3);transform:rotate(45deg)}
+.contractor-fab.open:hover{transform:rotate(45deg) scale(1.08)}
+.contractor-actions{background:#fafafa;border:1px solid #e0e0e0;border-radius:16px;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,0.12);display:flex;flex-direction:column;gap:8px;animation:ca-pop .2s ease}
+@keyframes ca-pop{from{opacity:0;transform:translateY(12px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.ca-row{display:flex;gap:8px}
+.ca-btn{flex:1;min-width:90px;padding:14px 8px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .12s ease;text-align:center;letter-spacing:0.3px}
+.ca-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.ca-btn:active{transform:scale(0.97)}
+.ca-blue{background:#2979ff;color:#fff}
+.ca-white{background:#ffffff;color:#111;border:1px solid #ddd}
+.ca-red{background:#ef4444;color:#fff}
+.ca-yellow{background:#ffd400;color:#111}
+.ca-green{background:#3fc34a;color:#fff}
+.ca-purple{background:#8b5cf6;color:#fff}
+
+/* Sales Sheet Button */
+.sales-sheet-btn{display:block;margin:16px auto 0;padding:14px 36px;border-radius:12px;border:none;background:linear-gradient(180deg,#ffe033,#ffc800);color:#111;font-size:15px;font-weight:700;letter-spacing:0.4px;cursor:pointer;box-shadow:0 4px 18px rgba(255,212,0,0.25);transition:all .15s ease}
+.sales-sheet-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(255,212,0,0.35)}
+.sales-sheet-btn:active{transform:scale(0.97)}
+
+/* Sales Sheet Page */
+.sales-sheet-page{position:fixed;inset:0;z-index:2000;background:#ffffff;color:#111;display:flex;flex-direction:column;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;animation:contractor-fade-in .25s ease}
+.ss-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e5e5e5;background:#fafafa}
+.ss-title{margin:0;font-size:18px;font-weight:700}
+.ss-your{color:#111}
+.ss-landscaper{color:#3fc34a}
+.ss-table-wrap{flex:1;overflow:auto;padding:16px}
+.ss-table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+.ss-table thead{position:sticky;top:0;z-index:2}
+.ss-table th{background:#2c2c2c;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:12px;letter-spacing:0.3px;white-space:nowrap;border:1px solid #444}
+.ss-table td{padding:8px;border:1px solid #ddd;color:#111;font-size:13px;vertical-align:top;background:#fff}
+.ss-table tbody tr:nth-child(even) td{background:#f7f7f7}
+.ss-table tbody tr:hover td{background:#fffde6}
+.ss-empty{text-align:center;color:#999;font-size:14px;padding:40px 0}
+.ss-table .ss-txn{font-weight:600;text-transform:capitalize}
+.ss-table .ss-price{font-weight:600}
+
+/* ===== Order Confirmation Modal ===== */
+.order-confirm-modal-content{max-width:420px;text-align:center}
+.order-confirm-message{margin:8px 0 24px;color:var(--muted);font-size:15px;line-height:1.5}
+.order-confirm-icons{display:flex;gap:24px;justify-content:center}
+.order-confirm-icon-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 32px;border-radius:14px;border:1px solid #222;background:linear-gradient(180deg,#161618,#111216);cursor:pointer;transition:all .15s ease;font-size:14px;font-weight:700;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.order-confirm-icon-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.order-confirm-icon-btn:active{transform:scale(0.96)}
+/* No button — red accent */
+.order-no{color:#ff4444;border-color:rgba(255,68,68,0.3)}
+.order-no:hover{background:rgba(255,68,68,0.08);border-color:rgba(255,68,68,0.5)}
+.order-no svg{stroke:#ff4444}
+/* Yes button — gold accent */
+.order-yes{color:var(--accent);border-color:rgba(255,212,0,0.3)}
+.order-yes:hover{background:rgba(255,212,0,0.08);border-color:rgba(255,212,0,0.5)}
+.order-yes svg{stroke:var(--accent)}
+
+/* ===== QWERTY Keyboard Modal ===== */
+.qwerty-modal-content{max-width:560px;padding:18px 18px 22px}
+.qwerty-title{margin:0 0 14px;font-size:18px;font-weight:700;color:var(--accent);letter-spacing:0.3px;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.qwerty-display{display:flex;align-items:center;padding:14px 18px;margin-bottom:14px;border-radius:12px;background:linear-gradient(180deg,#0f1113,#0b0b0d);border:1px solid #222;min-height:52px}
+.qwerty-value{color:var(--accent);font-size:26px;font-weight:700;letter-spacing:0.5px;word-break:break-all;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.qwerty-cursor{color:var(--accent);font-size:26px;font-weight:300;animation:qwerty-blink 1s step-end infinite;margin-left:1px}
+@keyframes qwerty-blink{0%,100%{opacity:1}50%{opacity:0}}
+.qwerty-rows{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.qwerty-row{display:flex;gap:5px;justify-content:center}
+/* Letter keys — yellow accent text matching numpad */
+.qwerty-key{min-width:36px;height:44px;border-radius:10px;border:1px solid #222;background:linear-gradient(180deg,#161618,#111216);color:var(--accent);font-size:18px;font-weight:700;cursor:pointer;transition:all .1s ease;-webkit-tap-highlight-color:transparent;user-select:none;display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.qwerty-key:active{transform:scale(0.92);background:rgba(255,212,0,0.12);border-color:rgba(255,212,0,0.4)}
+.qwerty-key:hover{border-color:rgba(255,212,0,0.25);background:rgba(255,212,0,0.04)}
+/* Shift key */
+.qwerty-key-shift{min-width:52px;color:var(--muted)}
+.qwerty-key-shift.qwerty-shift-active{color:var(--accent);border-color:rgba(255,212,0,0.3);background:rgba(255,212,0,0.08)}
+/* Backspace key */
+.qwerty-key-back{min-width:52px;color:var(--muted)}
+.qwerty-key-back:hover{color:#ff4444;border-color:rgba(255,68,68,0.3)}
+/* Space bar */
+.qwerty-key-space{flex:1;max-width:280px;min-width:140px;font-size:13px;color:var(--muted);letter-spacing:1px}
+.qwerty-key-space:hover{color:var(--accent)}
+/* Delivery / Transaction inline option selectors */
+.qwerty-options-row{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.qwerty-opt-group{flex:1;min-width:140px}
+.qwerty-opt-label{display:block;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:6px;letter-spacing:0.3px;text-transform:uppercase;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.qwerty-opt-btns{display:flex;gap:6px}
+.qwerty-opt-btn{position:relative;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;background:transparent;border:1px solid #222;cursor:pointer;color:var(--muted);transition:all .12s ease;font-size:13px;font-weight:600;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.qwerty-opt-btn input{position:absolute;opacity:0;width:0;height:0}
+.qwerty-opt-btn span{display:inline-block;padding:2px 4px}
+.qwerty-opt-btn input:checked + span{color:var(--accent);background:rgba(255,212,0,0.06);border-radius:6px;padding:4px 8px;font-weight:700;border:1px solid rgba(255,212,0,0.12)}
+.qwerty-opt-btn:hover{border-color:rgba(255,212,0,0.15)}
+/* Action buttons row */
+.qwerty-actions{display:flex;gap:10px;justify-content:flex-end}
+.qwerty-action-btn{display:flex;align-items:center;gap:6px;padding:12px 20px;border-radius:10px;border:1px solid #222;background:#1a1b1f;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .12s ease;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.qwerty-action-btn:hover{transform:translateY(-1px)}
+.qwerty-clear-btn:hover{color:#ff4444;border-color:rgba(255,68,68,0.3);background:rgba(255,68,68,0.06)}
+/* Save button — prominent yellow to match numpad Done */
+.qwerty-save-btn{border-color:var(--accent);background:linear-gradient(180deg,#ffe033,#ffc800);color:#111;font-weight:700;font-size:15px;padding:12px 28px}
+.qwerty-save-btn:hover{box-shadow:0 4px 20px rgba(255,212,0,0.3);background:linear-gradient(180deg,#ffdd22,#ffc200)}
+.qwerty-save-btn:active{transform:scale(0.96)}
+.qwerty-save-btn svg{stroke:#111}
+
+/* ── Sales Sheet Edit Column & Inline Editing ── */
+.ss-edit-col{width:42px;text-align:center}
+.ss-edit-btn{background:none;border:1px solid #333;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s ease;color:var(--muted);-webkit-tap-highlight-color:transparent}
+.ss-edit-btn:hover{border-color:rgba(255,212,0,0.4);color:var(--accent);background:rgba(255,212,0,0.06)}
+.ss-edit-btn:active{transform:scale(0.9)}
+/* Edit warning modal */
+.ss-edit-warn-title{color:#ff4444 !important;font-weight:700;font-size:20px;margin:0 0 10px;text-align:center}
+.ss-edit-warn-msg{color:var(--muted);font-size:14px;text-align:center;line-height:1.5;margin:0 0 18px}
+/* Inline editing inputs inside table rows */
+.ss-row-editing td{padding:4px 6px}
+.ss-row-editing input{width:100%;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,212,0,0.3);background:#1a1b1f;color:var(--white);font-size:13px;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.ss-row-editing input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 6px rgba(255,212,0,0.15)}
+/* Save / Undo action buttons in edit mode */
+.ss-row-actions{display:flex;gap:6px;justify-content:center}
+.ss-row-action{background:none;border:1px solid #333;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s ease;-webkit-tap-highlight-color:transparent}
+.ss-row-action-save{color:var(--accent);border-color:rgba(255,212,0,0.3)}
+.ss-row-action-save:hover{background:rgba(255,212,0,0.1)}
+.ss-row-action-undo{color:#ff4444;border-color:rgba(255,68,68,0.2)}
+.ss-row-action-undo:hover{background:rgba(255,68,68,0.06)}
+
+/* ===== SURCHARGE System ===== */
+/* Wrap — fixed bottom-center */
+.surcharge-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;display:flex;flex-direction:column;align-items:center;gap:8px}
+/* RED trigger button */
+.surcharge-btn{padding:10px 28px;border-radius:12px;border:none;background:linear-gradient(180deg,#ff3b3b,#d32f2f);color:#fff;font-size:14px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 18px rgba(211,47,47,0.35);transition:all .15s ease;font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.surcharge-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(211,47,47,0.5)}
+.surcharge-btn:active{transform:scale(0.96)}
+.surcharge-btn.has-mods{animation:sur-pulse 2s ease infinite}
+@keyframes sur-pulse{0%,100%{box-shadow:0 4px 18px rgba(211,47,47,0.35)}50%{box-shadow:0 4px 24px rgba(211,47,47,0.6)}}
+/* Horizontal popup menu */
+.surcharge-menu{display:flex;gap:6px;padding:8px 12px;border-radius:14px;background:rgba(17,18,22,0.97);border:1px solid rgba(255,212,0,0.15);box-shadow:0 8px 32px rgba(0,0,0,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:sur-menu-in .2s ease}
+@keyframes sur-menu-in{from{opacity:0;transform:translateY(8px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* Individual option buttons — YELLOW style */
+.sur-opt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 12px;border-radius:10px;border:1px solid #222;background:linear-gradient(180deg,#161618,#111216);color:var(--accent);font-size:10px;font-weight:700;cursor:pointer;transition:all .12s ease;min-width:56px;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;white-space:nowrap}
+.sur-opt:hover{border-color:rgba(255,212,0,0.3);background:rgba(255,212,0,0.06);transform:translateY(-2px)}
+.sur-opt:active{transform:scale(0.95)}
+.sur-opt svg{stroke:var(--accent);width:20px;height:20px;flex-shrink:0}
+.sur-opt.active{border-color:var(--accent);background:rgba(255,212,0,0.12);box-shadow:0 0 12px rgba(255,212,0,0.15)}
+/* Undo button — red tint */
+.sur-undo{color:#ff4444;border-color:rgba(255,68,68,0.15)}
+.sur-undo svg{stroke:#ff4444}
+.sur-undo:hover{border-color:rgba(255,68,68,0.4);background:rgba(255,68,68,0.06)}
+/* Live ticker showing active modifiers */
+.surcharge-ticker{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);z-index:94;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;animation:sur-menu-in .2s ease}
+.sur-tick{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;letter-spacing:0.3px}
+.sur-tick.discount{background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.25);color:#66bb6a}
+.sur-tick.fuel{background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.2);color:#ffa726}
+.sur-tick.cc{background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.2);color:#42a5f5}
+.sur-tick.tax{background:rgba(156,39,176,0.1);border:1px solid rgba(156,39,176,0.2);color:#ab47bc}
+/* Responsive */
+@media(max-width:600px){
+  .surcharge-menu{gap:4px;padding:6px 8px}
+  .sur-opt{padding:8px 8px;min-width:48px;font-size:9px}
+  .surcharge-btn{padding:8px 20px;font-size:12px}
+}
+/* Sales Sheet modifiers column */
+.ss-mods{font-size:11px;color:var(--muted);max-width:160px;word-wrap:break-word}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE-RESPONSIVE ADDITIONS
+   Pure CSS — no frameworks.  Mobile-first media queries.
+   ═══════════════════════════════════════════════════════════ */
+
+/* --- C. Prevent wide elements from breaking the layout --- */
+/* Ensure html/body never produce a horizontal scrollbar */
+html, body {
+  overflow-x: hidden;           /* kill accidental horizontal scroll */
+}
+
+/* Images, videos, and embedded content respect viewport width */
+img, video, iframe, canvas, svg {
+  max-width: 100%;              /* never wider than parent */
+  height: auto;                 /* preserve aspect ratio */
+}
+
+/* Tables scroll horizontally inside their container instead of breaking layout */
+table {
+  display: block;               /* lets overflow-x work */
+  overflow-x: auto;             /* horizontal scroll when table wider than screen */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --- B. Responsive CSS — Tablet breakpoint (≤768px) --- */
+@media (max-width: 768px) {
+
+  /* ── App container: fill full width on tablets/phones ── */
+  .app {
+    max-width: 100%;            /* remove 980px cap */
+    padding: 10px;              /* comfortable edge spacing */
+    margin: 8px auto;           /* tighter top margin */
+  }
+
+  /* ── Top row: stack input cards vertically ── */
+  .top-row {
+    flex-direction: column;     /* one card per row */
+    gap: 8px;                   /* tighter spacing when stacked */
+  }
+  .top-row .card {
+    flex: unset;                /* override flex:1 so cards fill width */
+    width: 100%;
+  }
+
+  /* ── Material selection: stack label/search + scoop buttons ── */
+  .material-selection {
+    flex-direction: column;     /* stack left & right vertically */
+    align-items: stretch;       /* stretch children to full width */
+    gap: 12px;
+  }
+  .material-selection .left,
+  .material-selection .right {
+    width: 100%;                /* each side takes full width */
+  }
+
+  /* ── Scoop radio buttons: wrap to next line if needed ── */
+  .scoops {
+    flex-wrap: wrap;            /* allow scoops to wrap on narrow screens */
+  }
+
+  /* ── Summary section: stack calc + actions vertically ── */
+  .summary {
+    flex-direction: column;     /* stack breakdown above action buttons */
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* ── Action buttons: full-width and stacked ── */
+  .summary .actions {
+    display: flex;
+    flex-direction: column;     /* stack Add to Order / Clear vertically */
+    gap: 8px;
+  }
+  .summary .actions button {
+    width: 100%;                /* each button fills the row */
+    padding: 12px;              /* larger tap target */
+  }
+
+  /* ── Orders header buttons: full-width ── */
+  .orders .orders-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .orders .orders-header button {
+    width: 100%;
+    padding: 12px;
+  }
+
+  /* ── Order list items: wrap long content ── */
+  .order-list li {
+    flex-wrap: wrap;            /* allow text to wrap instead of overflow */
+    gap: 6px;
+  }
+
+  /* ── Delivery chips: allow wrapping ── */
+  .delivery {
+    flex-wrap: wrap;
+  }
+
+  /* ── Costs row: stack on small screens ── */
+  .costs .row {
+    flex-wrap: wrap;
+  }
+
+  /* ── Buttons: full-width on mobile for easy tapping ── */
+  button {
+    min-height: 44px;           /* Apple HIG minimum touch target */
+  }
+
+  /* ── Modals: fill most of the screen on mobile ── */
+  .modal .modal-content {
+    width: 95vw !important;     /* near-full-width on mobile */
+    max-width: 95vw !important;
+    max-height: 90vh;           /* prevent modal from exceeding viewport height */
+    overflow-y: auto;           /* scroll content inside modal if needed */
+    padding: 14px;
+  }
+
+  /* ── Inventory modal search bar: stack items vertically ── */
+  .modal-bar {
+    flex-direction: column;     /* stack buttons + search vertically */
+    align-items: stretch !important;
+  }
+  .modal-bar .scoop-btn {
+    width: 100%;                /* full-width import/add/bulk buttons */
+    text-align: center;
+    justify-content: center;
+  }
+  /* Override the inline width on #inv-search so it fills container */
+  #inv-search {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  /* ── Form grid: single column on mobile ── */
+  .form-grid {
+    grid-template-columns: 1fr !important; /* one column instead of three */
+  }
+
+  /* ── Price row inputs: stack if too narrow ── */
+  .price-row {
+    flex-wrap: wrap;
+  }
+  .price-row input {
+    min-width: 0;               /* allow inputs to shrink */
+  }
+
+  /* ── Modal action buttons: wrap and fill ── */
+  .modal-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .modal-actions button {
+    flex: 1 1 auto;             /* share available space */
+    min-width: 80px;
+    text-align: center;
+  }
+
+  /* ── Favorites grid: allow cards to wrap and fill width ── */
+  .favorites {
+    flex-wrap: wrap;
+  }
+  .fav-item {
+    width: 100%;                /* full-width material cards on mobile */
+    min-width: 0;               /* override 140px fixed width */
+  }
+
+  /* ── Scoop / Coverage table: scroll horizontally ── */
+  .scov-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Admin grid: already has a 900px breakpoint, reinforce here ── */
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* ── Header: allow wrapping for small phones ── */
+  header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── Edit menu: prevent it from going off-screen right ── */
+  .edit-menu {
+    right: 0;
+    left: auto;
+    max-width: calc(100vw - 24px); /* stay within viewport */
+  }
+
+  /* ── Delivery row inside edit delivery modal ── */
+  .del-row {
+    flex-wrap: wrap;
+  }
+
+  /* ── Contractor page action buttons: wrap ── */
+  .contractor-main-btns {
+    flex-direction: column;
+    width: 100%;
+  }
+  .contractor-main-btns .ca-btn {
+    width: 100%;
+  }
+  .ca-row {
+    flex-wrap: wrap;
+  }
+  .ca-row .ca-btn {
+    flex: 1 1 45%;              /* two buttons per row, wrapping */
+  }
+
+  /* ── Sales Sheet: horizontal scroll for wide table ── */
+  .ss-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px;
+  }
+
+  /* ── QWERTY keyboard modal: fit keys to screen ── */
+  .qwerty-modal-content {
+    padding: 12px !important;
+  }
+  .qwerty-key {
+    min-width: 28px;            /* slightly smaller keys on mobile */
+    height: 40px;
+    font-size: 16px;
+  }
+  .qwerty-key-space {
+    min-width: 80px;
+  }
+  .qwerty-options-row {
+    flex-direction: column;     /* stack delivery/transaction selectors */
+    gap: 10px;
+  }
+  .qwerty-opt-btns {
+    flex-wrap: wrap;
+  }
+  .qwerty-actions {
+    flex-wrap: wrap;
+  }
+  .qwerty-actions button {
+    flex: 1 1 auto;
+  }
+
+  /* ── Order confirmation: icons side by side but flexible ── */
+  .order-confirm-icons {
+    gap: 16px;
+  }
+  .order-confirm-icon-btn {
+    padding: 14px 20px;        /* slightly smaller touch targets */
+  }
+
+  /* ── Numpad: stretch to full width on mobile ── */
+  .numpad {
+    max-width: 100%;            /* fill screen width */
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* ── Face menu / FAB: ensure it stays above other content ── */
+  .face-menu-wrap {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  /* ── Surcharge system: tighter positioning ── */
+  .surcharge-wrap {
+    bottom: 16px;
+  }
+  .surcharge-ticker {
+    bottom: 80px;
+  }
+}
+
+/* --- B. Responsive CSS — Phone breakpoint (≤480px) --- */
+@media (max-width: 480px) {
+
+  /* ── Even tighter padding on very small phones ── */
+  .app {
+    padding: 6px;
+    margin: 4px auto;
+  }
+
+  /* ── Header: smaller title on tiny screens ── */
+  header h1 {
+    font-size: 17px;
+  }
+
+  /* ── Cards: slightly less padding ── */
+  .card {
+    padding: 10px;
+  }
+
+  /* ── Results section: smaller big total text ── */
+  .results .big {
+    font-size: 16px;
+  }
+
+  /* ── Admin form grid: single column on very small screens ── */
+  .admin-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── QWERTY keys: even smaller on tiny phones ── */
+  .qwerty-key {
+    min-width: 24px;
+    height: 36px;
+    font-size: 14px;
+  }
+  .qwerty-key-space {
+    min-width: 60px;
+  }
+
+  /* ── Numpad keys: slightly smaller ── */
+  .numpad-key {
+    padding: 14px 0;
+    font-size: 20px;
+  }
+}
+
+/* --- A. iOS zoom prevention — inputs must be ≥16px on mobile --- */
+/* iOS auto-zooms when focusing an input with font-size < 16px.
+   This rule ensures all form controls are at least 16px on phones. */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important; /* prevent iOS auto-zoom on focus */
+  }
+}
